@@ -7,8 +7,8 @@ A procedural asset library for SideFX Houdini.
 - https://github.com/qLab/qLib
 - https://www.facebook.com/qLibHoudini
 
-Download the **dev branch** (the very-latest) here:
-https://github.com/qLab/qLib/archive/dev.zip
+Download the **latest version** here:
+https://github.com/qLab/qLib/archive/master.zip
 
 
 ### About
@@ -40,6 +40,7 @@ cinematics and commercials.
 - Workflow-related tools
 - A large collection of gallery items (node and subnet presets)
 - Shelf tools
+- Colour scemes, extra menu items
 - Experimental extras
 
 More details here:
@@ -92,7 +93,7 @@ QLIB=<<path to qLib install>>
 QOTL=$QLIB/otls
 
 # (linux)
-HOUDINI_OTLSCAN_PATH = $HIH/otls:$HIH/otls/wip:$QOTL/base:$QOTL/future:$QOTL/experimental:@/otls
+HOUDINI_OTLSCAN_PATH = $QOTL/base:$QOTL/future:$QOTL/experimental:@/otls
 HOUDINI_GALLERY_PATH = $QLIB/gallery:@/gallery
 HOUDINI_TOOLBAR_PATH = $QLIB/toolbar:@/toolbar
 HOUDINI_SCRIPT_PATH = $QLIB/scripts:@/scripts
@@ -105,7 +106,7 @@ QLIB=<<path to qLib install>>
 QOTL=$QLIB/otls
 
 # (windows)
-HOUDINI_OTLSCAN_PATH = $HIH/otls;$HIH/otls/wip;$QOTL/base;$QOTL/future;$QOTL/experimental;@/otls
+HOUDINI_OTLSCAN_PATH = $QOTL/base;$QOTL/future;$QOTL/experimental;@/otls
 HOUDINI_GALLERY_PATH = $QLIB/gallery;@/gallery
 HOUDINI_TOOLBAR_PATH = $QLIB/toolbar;@/toolbar
 HOUDINI_SCRIPT_PATH = $QLIB/scripts;@/scripts
@@ -117,10 +118,10 @@ Set environment variables on osx depending on the shell you are using. For bash/
 QLIB=<<path to qLib install>>
 QOTL=$QLIB/otls
 
-export HOUDINI_OTLSCAN_PATH=$HIH/otls:$HIH/otls/wip:$QOTL/base:$QOTL/future:$QOTL/experimental:@/otls
-export HOUDINI_GALLERY_PATH=$QLIB/gallery:@/gallery
-export HOUDINI_TOOLBAR_PATH=$QLIB/toolbar:@/toolbar
-export HOUDINI_SCRIPT_PATH=$QLIB/scripts:@/scripts
+HOUDINI_OTLSCAN_PATH=$QOTL/base:$QOTL/future:$QOTL/experimental:@/otls
+HOUDINI_GALLERY_PATH=$QLIB/gallery:@/gallery
+HOUDINI_TOOLBAR_PATH=$QLIB/toolbar:@/toolbar
+HOUDINI_SCRIPT_PATH=$QLIB/scripts:@/scripts
 ```
 For csh/tcsh use: setenv variable value"
 
@@ -129,11 +130,18 @@ For csh/tcsh use: setenv variable value"
 QLIB <<path to qLib install>>
 QOTL $QLIB/otls
 
-setenv HOUDINI_OTLSCAN_PATH $HIH/otls:$HIH/otls/wip:$QOTL/base:$QOTL/future:$QOTL/experimental:@/otls
+setenv HOUDINI_OTLSCAN_PATH $QOTL/base:$QOTL/future:$QOTL/experimental:@/otls
 setenv HOUDINI_GALLERY_PATH $QLIB/gallery:@/gallery
 setenv HOUDINI_TOOLBAR_PATH $QLIB/toolbar:@/toolbar
 setenv HOUDINI_SCRIPT_PATH $QLIB/scripts:@/scripts
 ```
+
+#### 3. Extras
+
+Extra menu items and color scemes can be found in the `menu/` and `config/` folders.
+These can be copied or linked into the appropriate folders within the user's
+houdiniXX.X/ preferences folder (e.g. $HOME/houdini15.0/config)
+
 
 ### Further readings and other places of interest
 
