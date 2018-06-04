@@ -9,12 +9,12 @@
     <memberTool name="AccessShotNode_qL"/>
     <memberTool name="ToggleViewportBackgroundColor_qL"/>
     <memberTool name="ToggleViewBackground_qL"/>
-    <memberTool name="RealTimePlayback_qL"/>
     <memberTool name="ToggleIntegerFrames_qL"/>
     <memberTool name="ReferenceCopy_qL"/>
     <memberTool name="AttribDisplayMarkers_qL"/>
     <memberTool name="ToggleViewportTemplates_qL"/>
     <memberTool name="ToggleViewportGuides_qL"/>
+    <memberTool name="ToggleTimeDependencyDisplay_qL"/>
     <memberTool name="CrashRecovery_qL"/>
   </toolshelf>
 
@@ -483,26 +483,6 @@ hou.hscript("viewdisplay -B %s *" % bg)
 hou.ui.setStatusMessage("Cycled background to %s" % bgs[bg].upper() )]]></script>
   </tool>
 
-  <tool name="RealTimePlayback_qL" label="realtime" icon="PLAYBAR_realtime">
-    <helpText><![CDATA[#icon: PLAYBAR/realtime
-#context: obj
-#type: tool
-
-= Toggle Integer Frames qL =
-
-*version 1*
-
-"""Toggle non-integer frame values on the playbar.
-----
-LMB: Enable real-time playback
-Shift-LMB: Disable real-time playback
-"""
-]]></helpText>
-    <script scriptType="python"><![CDATA[import hou
-
-hou.playbar.setRealTime( not kwargs['shiftclick'] )]]></script>
-  </tool>
-
   <tool name="ToggleViewportGuides_qL" label="/guides/" icon="NODEFLAGS_origin">
     <helpText><![CDATA[#icon: IMAGE/view_guides
 #context: obj
@@ -744,5 +724,46 @@ t = 'on' if hou.session.viewbg else 'off'
 hou.hscript("viewbackground -b %s *" % (t, ))
 hou.ui.setStatusMessage("Viewport background images are now %s" % ("DISPLAYED" if hou.session.viewbg else "OFF") )
 ]]></script>
+  </tool>
+
+  <tool name="ToggleTimeDependencyDisplay_qL" label="/time dep/" icon="NETVIEW_time_dependent_badge_large">
+    <helpText><![CDATA[#icon: NETVIEW/time_dependent_badge_large
+#context: obj
+#type: tool
+
+= Toggle Time Dependency Display qL =
+
+*version 1*
+
+"""Toggles time dependency badge display in network editors."""
+
+@bugs Limitations
+
+- It's for H16.5 or higher (but should work in H16)
+
+
+@relnotes Release Notes
+
+_version 1_ ---
+
+2018-05-27:
+    - First version.
+]]></helpText>
+    <script scriptType="python"><![CDATA[# toggle time-dependency display in network editor(s)
+# in H16.5 the relevant preference is called "badgetimedep", which can be set to "hide", "normal" or "large". "showtimedep" is no longer used
+
+D = 'badgetimedep'
+ns = [ t for t in hou.ui.paneTabs() if type(t) is hou.NetworkEditor ]
+
+try:
+    b = ns[0].getPref(D) # hide/large
+    b = 'hide' if b=='large' else 'large'
+    
+    for n in ns:
+        n.setPref('showtimedep', '1') # make it compatible w/ 16.0
+        n.setPref(D, b) # use the 16.5+ way
+
+except:
+    hou.ui.setStatusMessage("Couldn't toggle time-dependency badge", hou.severityType.Warning)]]></script>
   </tool>
 </shelfDocument>
