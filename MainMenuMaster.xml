@@ -92,15 +92,6 @@ import qlibutils; qlibutils.to_clipboard(env="JOB")]]>
 				</scriptCode>
 			</scriptItem>
 
-		<separatorItem />
-
-			<scriptItem id="h.ql_clipboard_HDALocation">
-				<label>Selected HDA Location(s)</label>
-				<scriptCode><![CDATA[
-import qlibutils; qlibutils.hdapath_to_clipboard()]]>
-				</scriptCode>
-			</scriptItem>
-
 		</subMenu>
 
 		<separatorItem />
@@ -170,13 +161,6 @@ import qlibutils; qlibutils.remove_embedded_hdas()]]>
 			</scriptItem>
 
 			<separatorItem />
-
-        <scriptItem id="h.tmp_show_kwargs_ql">
-            <label>debug: show kwargs [qL]</label>
-            <scriptCode><![CDATA[
-hou.ui.displayMessage(str(kwargs))
-            ]]></scriptCode>
-        </scriptItem>
 
 			<scriptItem id="h.ql_misc_menurefresh">
 				<label>Refresh Popup Menus</label>

@@ -1,5 +1,5 @@
 
-#include "NodeGraphCommon.inc"
+#include "NodeGraphCommon_qLib_175.inc"
 
 PaletteBackground:		GREY(0.5)
 PaletteSelected:		YELLOW
@@ -24,12 +24,12 @@ GraphGridPoints:		BLACK
 
 GraphNameText:			GREY(0.1)
 GraphNodeTypeText:		GREY(0.4)
-GraphCommentText:		#335559
+GraphCommentText:		#133539
 GraphDescriptiveNameText:	#39526E
-GraphContextOptionDepsText:	#6DB4BD
-GraphLopLastModifiedPrimText:	#6DB4BD
-GraphLopLayerCountText:		#6DB4BD
-GraphOutputForViewText:		#6DB4BD
+GraphContextOptionDepsText:	#236569
+GraphLopLastModifiedPrimText:	#236569
+GraphLopLayerCountText:		#236569
+GraphOutputForViewText:		#236569
 GraphNetworkBoxText:		WHITE
 GraphNetworkBoxTextDark:	BLACK
 GraphNetworkBoxNameText:	#76A8E1
@@ -65,10 +65,10 @@ GraphOutputHighlight:		#6B5634
 GraphTemplateHighlight:		#734670
 GraphFilterHighlight:		#298966
 
-GraphDopObjectData:		0.65	0.65	0.65
+GraphDopObjectData:		GREY(0.4)
 GraphDopData:			0.50	0.80	0.50
 GraphDopRelData:		0.20	0.60	0.20
-GraphDopSolverData:		0.7	0.5	0.9
+GraphDopSolverData:		0.35	0.25	0.45
 GraphDopAnyData:		0.9	0.9	0.9
 GraphSopHeightfield:		0.145 0.667 0.557
 GraphSopConstraints:		0.9	0.6	0.3

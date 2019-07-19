@@ -15,6 +15,10 @@ import re
 import subprocess
 import traceback
 
+# for paste_clipboard_to_netview()
+from hutil import Qt
+import nodegraphutils
+
 
 # TODO: msg functions with exception handling
 
@@ -253,8 +257,17 @@ def hdapath_to_clipboard():
     """Copies the full path of the first selected HDA to the clipboard.
     """
     hdas = get_hda_paths(hou.selectedNodes())
-    hdas = ' '.join(hdas)
+    hdas = '\n'.join(hdas)
     to_clipboard(hdas)
+
+
+def nodes_to_clipboard(fullPaths=False):
+    """Copies the names or full paths of selected nodes to the clipboard.
+    """
+    sep = '\n' if fullPaths else ' '
+    nodes = hou.selectedNodes()
+    text = sep.join([ n.path() if fullPaths else n.name() for n in nodes ])
+    to_clipboard(text)
 
 
 def toggle_abs_rel_path(kwargs):
@@ -416,3 +429,146 @@ def find_same_nodes(nodes):
     all = nodes[0].parent().children()
     r = [ n for n in all if type_name(n) in types ]
     return r
+
+
+def get_netview_path(kwargs):
+    """Finds the path of the current network view from kwargs.
+    """
+    if "editor" in kwargs:
+        return kwargs["editor"].pwd()
+    else:
+        # TODO: raise an error
+        return None
+
+
+def add_to_selection(nodes, kwargs):
+    """Extends the current node selection with 'nodes', according to
+    the modifier keys in kwargs.
+
+    no modifier:    replace selection
+    shift:          add to selection
+    ctrl:           remove from selection
+    ctrl+shift:     intersect with selection
+    """
+    haz_shift = kwargs["shiftclick"] or kwargs['altclick']
+    haz_ctrl = kwargs["ctrlclick"]
+
+    current = set(hou.selectedNodes())
+    sel = set(nodes)
+
+    if haz_shift or haz_ctrl:
+        # we got some modifier pressed
+        if haz_shift:
+            if haz_ctrl:
+                # shift+ctrl: intersection
+                sel = sel.intersection(current)
+            else:
+                # shift: union
+                sel = sel.union(current)
+        else:
+            # ctrl: remove from selection
+            sel = current.difference(sel)
+
+    if sel is not None:
+        hou.clearAllSelected()
+        for n in sel:
+            n.setSelected(True)
+
+
+def is_node_locked(node):
+    """Check if node is locked. Implementation level LOL.
+    """
+    r = False
+    if "isHardLocked" in dir(node):
+        r = node.isHardLocked()
+    elif "isLocked" in dir(node):
+        r = node.isLocked()
+    return r
+
+
+def select_netview_nodes(kwargs, criteria):
+    """.
+    """
+    path = get_netview_path(kwargs)
+    sel = [ n for n in path.children() if criteria(n) ]
+    add_to_selection(sel, kwargs)
+
+
+
+def paste_clipboard_to_netview(kwargs):
+    """Paste clipboard contents (text or image) into the network editor.
+    """
+    clipboard = Qt.QtGui.QGuiApplication.clipboard()
+    image = clipboard.image()
+    text = clipboard.text()
+    pane = kwargs.get('editor', None)
+
+    if pane:
+        pwd = pane.pwd()
+
+        if image.isNull():
+            # paste text (if any)
+            if text!="":
+                note = pwd.createStickyNote()
+                note.move(pane.visibleBounds().center())
+                s = note.size()
+                s = hou.Vector2((s.x()*1.5, s.y()*0.5, ))
+                note.setText(text)
+                note.setSize(s)
+        else:
+            # paste image
+
+            # TODO: generate automatic name
+            image_name = ''
+            ok, image_name = hou.ui.readInput('Enter name of image to be pasted:',
+                buttons=('Ok', 'Cancel', ), close_choice=1,
+                initial_contents=image_name)
+            if image_name=='':
+                ok = 1
+            image_name += '.png'
+
+            if ok==0:
+                category = hou.objNodeTypeCategory()
+                hda_typename = 'qLib::embedded_images'
+                embedded = 'Embedded'
+                hda_def = hou.hdaDefinition(category, hda_typename, embedded)
+                
+                # create hda definition if doesn't exist
+                if not hda_def:
+                    temp_node = hou.node('/obj').createNode('subnet')
+                    hda_node = temp_node.createDigitalAsset(name=hda_typename, save_as_embedded=True)
+                    hda_node.destroy()
+        
+                hda_def = hou.hdaDefinition(category, hda_typename, embedded)
+        
+                # create an instance in /obj if doesn't exist
+                node = None
+                nodes = [ n for n in hou.node('/obj').children() if n.type().name()==hda_typename ]
+                
+                if len(nodes)==0:
+                    node = hou.node('/obj').createNode(hda_typename, node_name="embedded_images")
+        
+                # add clipboard image to hda definition (as section)
+                ba = Qt.QtCore.QByteArray();
+                buffer = Qt.QtCore.QBuffer(ba)
+                buffer.open(Qt.QtCore.QIODevice.WriteOnly)
+                image.save(buffer, "png")       
+                buffer.close()
+                hda_def.addSection(image_name, str(buffer.data()))
+                
+                # add image to network view
+                image = hou.NetworkImage("opdef:/qLib::Object/embedded_images?%s" % image_name)
+                image.setBrightness(0.75)
+                #image.setRect(hou.BoundingRect(0, 0, 5, 2))
+                s = pane.visibleBounds()
+                center = s.center()
+                s.translate(-center)
+                s.scale((0.25, 0.25, ))
+                s.translate(center)
+                image.setRect(s)
+
+                images = nodegraphutils.loadBackgroundImages(pwd)
+                images.append(image)
+                pane.setBackgroundImages(images)
+                nodegraphutils.saveBackgroundImages(pwd, images)
+

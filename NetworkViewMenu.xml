@@ -28,63 +28,89 @@
 <mainMenu>
     <menuBar>
 
+
     <subMenu id = "qLib_network_view_menu">
         <modifyItem><insertBefore>help_menu</insertBefore></modifyItem>
         <label>qLib</label>
 
-        <subMenu id = "select_submenu">
+        <subMenu id = "select_submenu_ql">
             <label>Select</label>
 
             <scriptItem id="pane.wsheet.select_all_of_same_type_ql">
                 <label>All of Same Type</label>
                 <scriptCode><![CDATA[
-hou.ui.displayMessage(str(kwargs))
+import qlibutils
+sel = hou.selectedNodes()
+same = qlibutils.find_same_nodes(sel)
+qlibutils.add_to_selection(same, kwargs)
                 ]]></scriptCode>
             </scriptItem>
 
             <separatorItem />
-
-            <scriptItem id="pane.wsheet.select_bypassed_ql">
-                <label>Bypassed</label>
-                <scriptCode><![CDATA[
-hou.ui.displayMessage(str(kwargs))
-                ]]></scriptCode>
-            </scriptItem>
 
             <scriptItem id="pane.wsheet.select_non_bypassed_ql">
                 <label>Non-Bypassed</label>
                 <scriptCode><![CDATA[
-hou.ui.displayMessage(str(kwargs))
+import qlibutils
+qlibutils.select_netview_nodes(kwargs, lambda n: not n.isBypassed())
+                ]]></scriptCode>
+            </scriptItem>
+
+            <scriptItem id="pane.wsheet.select_bypassed_ql">
+                <label>Bypassed</label>
+                <scriptCode><![CDATA[
+import qlibutils
+qlibutils.select_netview_nodes(kwargs, lambda n: n.isBypassed())
                 ]]></scriptCode>
             </scriptItem>
 
             <separatorItem />
 
-            <scriptItem id="pane.wsheet.select_frozen_ql">
-                <label>Frozen</label>
-                <scriptCode><![CDATA[
-hou.ui.displayMessage(str(kwargs))
-                ]]></scriptCode>
-            </scriptItem>
-
             <scriptItem id="pane.wsheet.select_non_frozen_ql">
-                <label>Non-Frozen</label>
+                <label>Non-Frozen (Non-Locked)</label>
                 <scriptCode><![CDATA[
-hou.ui.displayMessage(str(kwargs))
+import qlibutils
+qlibutils.select_netview_nodes(kwargs, lambda n: not qlibutils.is_node_locked(n))
                 ]]></scriptCode>
             </scriptItem>
 
+            <scriptItem id="pane.wsheet.select_frozen_ql">
+                <label>Frozen (Locked)</label>
+                <scriptCode><![CDATA[
+import qlibutils
+qlibutils.select_netview_nodes(kwargs, lambda n: qlibutils.is_node_locked(n))
+                ]]></scriptCode>
+            </scriptItem>
+
+            <separatorItem />
+
+            <scriptItem id="pane.wsheet.select_non_time_dependent_ql">
+                <label>Non-Time Dependent</label>
+                <scriptCode><![CDATA[
+import qlibutils
+qlibutils.select_netview_nodes(kwargs, lambda n: not n.isTimeDependent())
+                ]]></scriptCode>
+            </scriptItem>
+
+            <scriptItem id="pane.wsheet.select_time_dependent_ql">
+                <label>Time Dependent</label>
+                <scriptCode><![CDATA[
+import qlibutils
+qlibutils.select_netview_nodes(kwargs, lambda n: n.isTimeDependent())
+                ]]></scriptCode>
+            </scriptItem>
+<!--
             <separatorItem />
 
             <scriptItem id="pane.wsheet.select_subnetworks_ql">
-                <label>Sub-Networks</label>
+                <label>Sub-Networks (wip)</label>
                 <scriptCode><![CDATA[
 hou.ui.displayMessage(str(kwargs))
                 ]]></scriptCode>
             </scriptItem>
 
             <scriptItem id="pane.wsheet.select_non_subnetworks_ql">
-                <label>Non-SubNetworks</label>
+                <label>Non-SubNetworks (wip)</label>
                 <scriptCode><![CDATA[
 hou.ui.displayMessage(str(kwargs))
                 ]]></scriptCode>
@@ -93,28 +119,155 @@ hou.ui.displayMessage(str(kwargs))
             <separatorItem />
 
             <scriptItem id="pane.wsheet.select_hdas_ql">
-                <label>All HDA Nodes</label>
+                <label>All HDA Nodes (wip)</label>
                 <scriptCode><![CDATA[
 hou.ui.displayMessage(str(kwargs))
                 ]]></scriptCode>
             </scriptItem>
 
             <scriptItem id="pane.wsheet.select_unlocked_hdas_ql">
-                <label>Unlocked HDAs</label>
+                <label>Unlocked HDAs (wip)</label>
                 <scriptCode><![CDATA[
 hou.ui.displayMessage(str(kwargs))
                 ]]></scriptCode>
             </scriptItem>
 
             <scriptItem id="pane.wsheet.select_locked_hdas_ql">
-                <label>Locked HDAs</label>
+                <label>Locked HDAs (wip)</label>
                 <scriptCode><![CDATA[
 hou.ui.displayMessage(str(kwargs))
+                ]]></scriptCode>
+            </scriptItem>
+-->
+        </subMenu>
+
+
+        <subMenu id = "copy_to_clipboard_submenu_ql">
+
+            <label>Copy</label>
+
+            <scriptItem id="pane.wsheet.copy_node_names_ql">
+                <label>Selected OP Names</label>
+                <scriptCode><![CDATA[
+import qlibutils; qlibutils.nodes_to_clipboard()
+                ]]></scriptCode>
+            </scriptItem>
+
+            <scriptItem id="pane.wsheet.copy_node_paths_ql">
+                <label>Selected OP Full Paths</label>
+                <scriptCode><![CDATA[
+import qlibutils; qlibutils.nodes_to_clipboard(fullPaths=True)
+                ]]></scriptCode>
+            </scriptItem>
+
+            <separatorItem />
+
+            <scriptItem id="pane.wsheet.copy_hda_locations_ql">
+                <label>Selected HDA Location(s)</label>
+                <scriptCode><![CDATA[
+import qlibutils; qlibutils.hdapath_to_clipboard()
                 ]]></scriptCode>
             </scriptItem>
 
         </subMenu>
 
+
+        <subMenu id = "paste_from_clipboard_submenu_ql">
+
+            <label>Paste</label>
+            <scriptItem id="pane.wsheet.paste_from_clipboard_ql">
+                <label>Clipboard as Text/Image...</label>
+                <scriptCode><![CDATA[
+import qlibutils; qlibutils.paste_clipboard_to_netview(kwargs)
+                ]]></scriptCode>
+            </scriptItem>
+
+        </subMenu>
+
+
+        <subMenu id = "comment_submenu_ql">
+            <label>Comment</label>
+
+           <scriptItem id="pane.wsheet.comment_cut_ql">
+                <label>Cut</label>
+                <scriptCode><![CDATA[
+import qlibutils
+sel = hou.selectedNodes()
+if sel:
+    qlibutils.to_clipboard(sel[0].comment())
+    sel[0].setComment("")
+                ]]></scriptCode>
+            </scriptItem>
+
+           <scriptItem id="pane.wsheet.comment_copy_ql">
+                <label>Copy</label>
+                <scriptCode><![CDATA[
+import qlibutils
+sel = hou.selectedNodes()
+if sel:
+    qlibutils.to_clipboard(sel[0].comment())
+                ]]></scriptCode>
+            </scriptItem>
+
+           <scriptItem id="pane.wsheet.comment_paste_ql">
+                <label>Paste</label>
+                <scriptCode><![CDATA[
+sel = hou.selectedNodes()
+c = hou.ui.getTextFromClipboard()
+for s in sel:
+    try:
+        s.setComment(c)
+    except:
+        pass
+                ]]></scriptCode>
+            </scriptItem>
+
+            <separatorItem />
+
+           <scriptItem id="pane.wsheet.show_comment_ql">
+                <label>Show in Network Editor</label>
+                <scriptCode><![CDATA[
+sel = hou.selectedNodes()
+for s in sel:
+    try:
+        hou.hscript("opset -Y on %s" % s.path())
+    except:
+        pass
+                ]]></scriptCode>
+            </scriptItem>
+
+            <scriptItem id="pane.wsheet.hide_comment_ql">
+                <label>Hide in Network Editor</label>
+                <scriptCode><![CDATA[
+sel = hou.selectedNodes()
+for s in sel:
+    try:
+        hou.hscript("opset -Y off %s" % s.path())
+    except:
+        pass
+                ]]></scriptCode>
+            </scriptItem>
+
+            <separatorItem />
+
+            <scriptItem id="pane.wsheet.clear_comment_ql">
+                <label>Clear Comment...</label>
+                <scriptCode><![CDATA[
+d = hou.ui.displayMessage("Clear comment on selected nodes?", buttons=("Yes", "No", ))
+if d == 0:
+    sel = hou.selectedNodes()
+    for s in sel:
+        try:
+            s.setComment("")
+        except:
+            pass
+                ]]></scriptCode>
+            </scriptItem>
+
+        </subMenu>
+
+
+<!--
         <separatorItem />
 
         <scriptItem id="pane.wsheet.tmp_show_kwargs_ql">
@@ -123,7 +276,7 @@ hou.ui.displayMessage(str(kwargs))
 hou.ui.displayMessage(str(kwargs))
             ]]></scriptCode>
         </scriptItem>
-
+-->
     </subMenu>
 
 
