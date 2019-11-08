@@ -36,6 +36,33 @@
         <subMenu id = "select_submenu_ql">
             <label>Select</label>
 
+            <scriptItem id="pane.wsheet.select_all_ql">
+                <label>Select All</label>
+                <scriptCode><![CDATA[
+import qlibutils
+qlibutils.set_netview_selection(kwargs, lambda n: True)
+                ]]></scriptCode>
+            </scriptItem>
+
+            <scriptItem id="pane.wsheet.select_none_ql">
+                <label>Select None</label>
+                <scriptCode><![CDATA[
+#import qlibutils
+#qlibutils.set_netview_selection(kwargs, lambda n: False)
+hou.clearAllSelected()
+                ]]></scriptCode>
+            </scriptItem>
+
+            <scriptItem id="pane.wsheet.select_invert_ql">
+                <label>Select Invert</label>
+                <scriptCode><![CDATA[
+import qlibutils
+qlibutils.set_netview_selection(kwargs, lambda n: not n.isSelected())
+                ]]></scriptCode>
+            </scriptItem>
+
+            <separatorItem />
+
             <scriptItem id="pane.wsheet.select_all_of_same_type_ql">
                 <label>All of Same Type</label>
                 <scriptCode><![CDATA[
@@ -99,6 +126,42 @@ import qlibutils
 qlibutils.select_netview_nodes(kwargs, lambda n: n.isTimeDependent())
                 ]]></scriptCode>
             </scriptItem>
+
+            <separatorItem />
+
+            <scriptItem id="pane.wsheet.select_same_author_ql">
+                <label>By Same Author</label>
+                <scriptCode><![CDATA[
+import qlibutils
+sel = hou.selectedNodes()
+authors = qlibutils.get_node_authors(sel)
+if len(authors)>0:
+    qlibutils.statmsg("Selecting nodes by author(s): %s" % ",  ".join(authors))
+    qlibutils.select_netview_nodes(kwargs, lambda n: qlibutils.has_author(n, authors))
+                ]]></scriptCode>
+            </scriptItem>
+
+            <scriptItem id="pane.wsheet.select_same_author_name_only_ql">
+                <label>By Same Author (Username Only)</label>
+                <scriptCode><![CDATA[
+import qlibutils
+sel = hou.selectedNodes()
+authors = qlibutils.get_node_authors(sel, username_only=True)
+if len(authors)>0:
+    qlibutils.statmsg("Selecting nodes by author(s): %s" % ",  ".join(authors))
+    qlibutils.select_netview_nodes(kwargs, lambda n: qlibutils.has_author(n, authors, username_only=True))
+                ]]></scriptCode>
+            </scriptItem>
+
+            <separatorItem />
+
+            <scriptItem id="pane.wsheet.select_embedded_ql">
+                <label>Embedded HDAs</label>
+                <scriptCode><![CDATA[
+import qlibutils
+qlibutils.select_netview_nodes(kwargs, lambda n: qlibutils.has_embedded_def(n))
+                ]]></scriptCode>
+            </scriptItem>
 <!--
             <separatorItem />
 
@@ -141,6 +204,110 @@ hou.ui.displayMessage(str(kwargs))
 -->
         </subMenu>
 
+        <subMenu id = "display_submenu_ql">
+            <label>Display</label>
+
+            <scriptItem id="pane.wsheet.display_show_all_ql">
+                <label>Show All Nodes</label>
+                <scriptCode><![CDATA[
+sel = kwargs['editor'].pwd().children()
+for s in sel:
+    try:
+        hou.hscript("opset -e on %s" % s.path())
+    except:
+        pass
+                ]]></scriptCode>
+            </scriptItem>
+
+            <separatorItem />
+
+            <scriptItem id="pane.wsheet.display_isolate_selected_ql">
+                <label>Isolate Selected Nodes</label>
+                <scriptCode><![CDATA[
+sel = hou.selectedNodes()
+all = kwargs['editor'].pwd().children()
+if len(sel)>0:
+    for s in all:
+        try:
+            hou.hscript("opset -e off %s" % s.path())
+        except:
+            pass
+    for s in sel:
+        try:
+            hou.hscript("opset -e on %s" % s.path())
+        except:
+            pass
+                ]]></scriptCode>
+            </scriptItem>
+
+            <scriptItem id="pane.wsheet.display_hide_selected_ql">
+                <label>Hide Selected Nodes</label>
+                <scriptCode><![CDATA[
+sel = hou.selectedNodes()
+for s in sel:
+    try:
+        hou.hscript("opset -e off %s" % s.path())
+    except:
+        pass
+                ]]></scriptCode>
+            </scriptItem>
+
+            <separatorItem />
+
+            <scriptItem id="pane.wsheet.display_show_desc_parm_ql">
+                <label>Show Descriptive Parm</label>
+                <scriptCode><![CDATA[
+sel = hou.selectedNodes()
+for s in sel:
+    try:
+        hou.hscript("opset -P on %s" % s.path())
+    except:
+        pass
+                ]]></scriptCode>
+            </scriptItem>
+
+            <scriptItem id="pane.wsheet.display_hide_desc_parm_ql">
+                <label>Hide Descriptive Parm</label>
+                <scriptCode><![CDATA[
+sel = hou.selectedNodes()
+for s in sel:
+    try:
+        hou.hscript("opset -P off %s" % s.path())
+    except:
+        pass
+                ]]></scriptCode>
+            </scriptItem>
+
+            <separatorItem />
+
+            <scriptItem id="pane.wsheet.display_show_comment_ql">
+                <label>Show Comment</label>
+                <scriptCode><![CDATA[
+sel = hou.selectedNodes()
+for s in sel:
+    try:
+        hou.hscript("opset -Y on %s" % s.path())
+    except:
+        pass
+                ]]></scriptCode>
+            </scriptItem>
+
+            <scriptItem id="pane.wsheet.display_hide_comment_ql">
+                <label>Hide Comment</label>
+                <scriptCode><![CDATA[
+sel = hou.selectedNodes()
+for s     try:
+        hou.hscript("opset -Y off %s" % s.path())
+    except:
+        pass
+                ]]></scriptCode>
+            </scriptItem>
+
+        </subMenu>
+
+
+        <separatorItem />
+
 
         <subMenu id = "copy_to_clipboard_submenu_ql">
 
@@ -153,10 +320,26 @@ import qlibutils; qlibutils.nodes_to_clipboard()
                 ]]></scriptCode>
             </scriptItem>
 
+            <scriptItem id="pane.wsheet.copy_node_hdatypenames_ql">
+                <label>Selected OP HDA Type Names</label>
+                <scriptCode><![CDATA[
+import qlibutils; qlibutils.nodes_to_clipboard(hdaTypeNames=True)
+                ]]></scriptCode>
+            </scriptItem>
+
+            <separatorItem />
+
             <scriptItem id="pane.wsheet.copy_node_paths_ql">
                 <label>Selected OP Full Paths</label>
                 <scriptCode><![CDATA[
 import qlibutils; qlibutils.nodes_to_clipboard(fullPaths=True)
+                ]]></scriptCode>
+            </scriptItem>
+
+            <scriptItem id="pane.wsheet.copy_node_paths_hdatypenames_ql">
+                <label>Selected OP Full Paths and Type</label>
+                <scriptCode><![CDATA[
+import qlibutils; qlibutils.nodes_to_clipboard(fullPaths=True, hdaTypeNames=True)
                 ]]></scriptCode>
             </scriptItem>
 
@@ -183,6 +366,9 @@ import qlibutils; qlibutils.paste_clipboard_to_netview(kwargs)
             </scriptItem>
 
         </subMenu>
+
+
+        <separatorItem />
 
 
         <subMenu id = "comment_submenu_ql">
@@ -224,7 +410,7 @@ for s in sel:
 
             <separatorItem />
 
-           <scriptItem id="pane.wsheet.show_comment_ql">
+            <scriptItem id="pane.wsheet.show_comment_ql">
                 <label>Show in Network Editor</label>
                 <scriptCode><![CDATA[
 sel = hou.selectedNodes()
@@ -262,6 +448,20 @@ if d == 0:
         except:
             pass
                 ]]></scriptCode>
+            </scriptItem>
+
+        </subMenu>
+
+
+
+        <subMenu id = "misc_submenu_ql">
+            <label>Misc</label>
+
+            <scriptItem id="pane.wsheet.embed_selected_hdas_ql">
+                <label>Embed Selected HDAs...</label>
+                <scriptCode><![CDATA[
+import qlibutils; reload(qlibutils); qlibutils.embed_selected_hdas(kwargs)
+]]></scriptCode>
             </scriptItem>
 
         </subMenu>

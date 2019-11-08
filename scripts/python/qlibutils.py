@@ -261,12 +261,23 @@ def hdapath_to_clipboard():
     to_clipboard(hdas)
 
 
-def nodes_to_clipboard(fullPaths=False):
+def nodes_to_clipboard(fullPaths=False, hdaTypeNames=False):
     """Copies the names or full paths of selected nodes to the clipboard.
     """
     sep = '\n' if fullPaths else ' '
     nodes = hou.selectedNodes()
-    text = sep.join([ n.path() if fullPaths else n.name() for n in nodes ])
+
+    func = lambda n: n.name()
+
+    if hdaTypeNames:
+        func = lambda n: n.type().name()
+
+    if fullPaths:
+            func = lambda n: n.path()
+            if hdaTypeNames:
+                func = lambda n: "%s (%s)" % (n.path(), n.type().name(), )
+
+    text = sep.join([ func(n) for n in nodes ])
     to_clipboard(text)
 
 
@@ -402,7 +413,6 @@ def backup_rop_output_file():
 def remove_embedded_hdas():
     """Remove all embedded HDAs from the scene.
     """
-
     do_it = hou.ui.displayMessage(
         "Remove all Embdedded HDAs (OTLs) from the current scene?\n"
         "Warning: This cannot be undone!",
@@ -486,6 +496,44 @@ def is_node_locked(node):
     return r
 
 
+def has_embedded_def(node):
+    """Check if the node's HDA definition is Embedded.
+    """
+    d = node.type().definition()
+    r = d and d.libraryFilePath() == "Embedded"
+    return r
+
+
+def get_node_author(node, username_only=False):
+    """Returns the author of the specified node.
+    """
+    author = '???'
+    try:
+        # digging up author info using an archaic command
+        author = hou.hscript('opstat -u %s' % node.path())[0].split(' ')[-1].split('\n')[0]
+        if username_only:
+            author = author.split("@")[0]
+    except:
+        pass # we can't hack the info out, just return '???'
+    return author
+
+
+def get_node_authors(nodes, username_only=False):
+    """Returns a list of authors for the specified list of nodes.
+    """
+    r = set()
+    for n in nodes:
+        r.add(get_node_author(n, username_only=username_only))
+    return list(r)
+
+
+def has_author(node, authors, username_only=False):
+    """Check if a node has one of the authors in the "authors" list.
+    """
+    a = get_node_author(node, username_only=username_only)
+    return a in authors
+
+
 def select_netview_nodes(kwargs, criteria):
     """.
     """
@@ -493,6 +541,11 @@ def select_netview_nodes(kwargs, criteria):
     sel = [ n for n in path.children() if criteria(n) ]
     add_to_selection(sel, kwargs)
 
+
+def set_netview_selection(kwargs, criteria):
+    path = get_netview_path(kwargs)
+    for n in path.children():
+        n.setSelected(criteria(n))
 
 
 def paste_clipboard_to_netview(kwargs):
@@ -572,3 +625,32 @@ def paste_clipboard_to_netview(kwargs):
                 pane.setBackgroundImages(images)
                 nodegraphutils.saveBackgroundImages(pwd, images)
 
+
+def embed_selected_hdas(kwargs):
+    """Embed HDA definitions of selected nodes (interactive only).
+    """
+    defs = set()
+
+    for s in hou.selectedNodes():
+        d = s.type().definition()
+        if d and d.libraryFilePath()!="Embedded":
+            defs.add(d)
+
+    defs = list(defs)
+
+    if len(defs)==0:
+        statmsg("No nodes with embeddable definitions were selected")
+        return
+
+    msg = "Embed the following HDA(s) into the current hip file?\n\n"
+    msg += "\n".join([ "HDA:  %s\npath:  %s\n" % (d.nodeType().name(), d.libraryFilePath(), ) for d in defs ])
+
+    do_it = hou.ui.displayMessage(
+        msg,
+        buttons=("Embed", "Cancel", ),
+        default_choice=1, close_choice=1)
+
+    if do_it==0:
+        for d in defs:
+            d.copyToHDAFile("Embedded")
+            # TODO: switch definition? this seems to switch it
