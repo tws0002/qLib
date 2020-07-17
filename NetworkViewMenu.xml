@@ -36,28 +36,11 @@
         <subMenu id = "select_submenu_ql">
             <label>Select</label>
 
-            <scriptItem id="pane.wsheet.select_all_ql">
-                <label>Select All</label>
-                <scriptCode><![CDATA[
-import qlibutils
-qlibutils.set_netview_selection(kwargs, lambda n: True)
-                ]]></scriptCode>
-            </scriptItem>
-
-            <scriptItem id="pane.wsheet.select_none_ql">
-                <label>Select None</label>
-                <scriptCode><![CDATA[
-#import qlibutils
-#qlibutils.set_netview_selection(kwargs, lambda n: False)
-hou.clearAllSelected()
-                ]]></scriptCode>
-            </scriptItem>
-
             <scriptItem id="pane.wsheet.select_invert_ql">
                 <label>Select Invert</label>
                 <scriptCode><![CDATA[
 import qlibutils
-qlibutils.set_netview_selection(kwargs, lambda n: not n.isSelected())
+qlibutils.set_netview_selection(kwargs, lambda n: not n.isSelected(), allItems=True)
                 ]]></scriptCode>
             </scriptItem>
 
@@ -67,21 +50,51 @@ qlibutils.set_netview_selection(kwargs, lambda n: not n.isSelected())
                 <label>All of Same Type</label>
                 <scriptCode><![CDATA[
 import qlibutils
-sel = hou.selectedNodes()
+sel = hou.selectedItems()
 same = qlibutils.find_same_nodes(sel)
+qlibutils.add_to_selection(same, kwargs)
+                ]]></scriptCode>
+            </scriptItem>
+
+            <scriptItem id="pane.wsheet.select_all_of_same_color_ql">
+                <label>All of Same Color</label>
+                <scriptCode><![CDATA[
+import qlibutils
+sel = hou.selectedItems()
+same = qlibutils.find_same_colored(sel)
+qlibutils.add_to_selection(same, kwargs)
+                ]]></scriptCode>
+            </scriptItem>
+
+            <scriptItem id="pane.wsheet.select_all_of_same_shape_ql">
+                <label>All of Same Shape</label>
+                <scriptCode><![CDATA[
+import qlibutils
+sel = hou.selectedItems()
+same = qlibutils.find_same_shape(sel)
 qlibutils.add_to_selection(same, kwargs)
                 ]]></scriptCode>
             </scriptItem>
 
             <separatorItem />
 
-            <scriptItem id="pane.wsheet.select_non_bypassed_ql">
-                <label>Non-Bypassed</label>
+            <scriptItem id="pane.wsheet.select_with_keyframed_parms_ql">
+                <label>Animated (Keyframed)</label>
                 <scriptCode><![CDATA[
 import qlibutils
-qlibutils.select_netview_nodes(kwargs, lambda n: not n.isBypassed())
+qlibutils.select_netview_nodes(kwargs, qlibutils.has_keyframed_parms)
                 ]]></scriptCode>
             </scriptItem>
+
+            <scriptItem id="pane.wsheet.select_with_time_dependent_parms_ql">
+                <label>With Time-Dependent Parms</label>
+                <scriptCode><![CDATA[
+import qlibutils
+qlibutils.select_netview_nodes(kwargs, qlibutils.has_time_dependent_parms)
+                ]]></scriptCode>
+            </scriptItem>
+
+            <separatorItem />
 
             <scriptItem id="pane.wsheet.select_bypassed_ql">
                 <label>Bypassed</label>
@@ -91,25 +104,41 @@ qlibutils.select_netview_nodes(kwargs, lambda n: n.isBypassed())
                 ]]></scriptCode>
             </scriptItem>
 
-            <separatorItem />
-
-            <scriptItem id="pane.wsheet.select_non_frozen_ql">
-                <label>Non-Frozen (Non-Locked)</label>
+            <scriptItem id="pane.wsheet.select_non_bypassed_ql">
+                <label>Non-Bypassed</label>
                 <scriptCode><![CDATA[
 import qlibutils
-qlibutils.select_netview_nodes(kwargs, lambda n: not qlibutils.is_node_locked(n))
+qlibutils.select_netview_nodes(kwargs, lambda n: not n.isBypassed())
                 ]]></scriptCode>
             </scriptItem>
 
+            <separatorItem />
+
             <scriptItem id="pane.wsheet.select_frozen_ql">
-                <label>Frozen (Locked)</label>
+                <label>Locked (Frozen)</label>
                 <scriptCode><![CDATA[
 import qlibutils
 qlibutils.select_netview_nodes(kwargs, lambda n: qlibutils.is_node_locked(n))
                 ]]></scriptCode>
             </scriptItem>
 
+            <scriptItem id="pane.wsheet.select_non_frozen_ql">
+                <label>Non-Locked (Non-Frozen)</label>
+                <scriptCode><![CDATA[
+import qlibutils
+qlibutils.select_netview_nodes(kwargs, lambda n: not qlibutils.is_node_locked(n))
+                ]]></scriptCode>
+            </scriptItem>
+
             <separatorItem />
+
+            <scriptItem id="pane.wsheet.select_time_dependent_ql">
+                <label>Time Dependent</label>
+                <scriptCode><![CDATA[
+import qlibutils
+qlibutils.select_netview_nodes(kwargs, lambda n: n.isTimeDependent())
+                ]]></scriptCode>
+            </scriptItem>
 
             <scriptItem id="pane.wsheet.select_non_time_dependent_ql">
                 <label>Non-Time Dependent</label>
@@ -119,11 +148,29 @@ qlibutils.select_netview_nodes(kwargs, lambda n: not n.isTimeDependent())
                 ]]></scriptCode>
             </scriptItem>
 
-            <scriptItem id="pane.wsheet.select_time_dependent_ql">
-                <label>Time Dependent</label>
+            <separatorItem />
+
+            <scriptItem id="pane.wsheet.select_template_ql">
+                <label>With Template Flag</label>
                 <scriptCode><![CDATA[
 import qlibutils
-qlibutils.select_netview_nodes(kwargs, lambda n: n.isTimeDependent())
+qlibutils.select_netview_nodes(kwargs, lambda n: n.isTemplateFlagSet())
+                ]]></scriptCode>
+            </scriptItem>
+
+            <scriptItem id="pane.wsheet.select_display_ql">
+                <label>With Display Flag</label>
+                <scriptCode><![CDATA[
+import qlibutils
+qlibutils.select_netview_nodes(kwargs, lambda n: n.isDisplayFlagSet())
+                ]]></scriptCode>
+            </scriptItem>
+
+            <scriptItem id="pane.wsheet.select_render_ql">
+                <label>With Render Flag</label>
+                <scriptCode><![CDATA[
+import qlibutils
+qlibutils.select_netview_nodes(kwargs, lambda n: n.isRenderFlagSet())
                 ]]></scriptCode>
             </scriptItem>
 
@@ -160,6 +207,14 @@ if len(authors)>0:
                 <scriptCode><![CDATA[
 import qlibutils
 qlibutils.select_netview_nodes(kwargs, lambda n: qlibutils.has_embedded_def(n))
+                ]]></scriptCode>
+            </scriptItem>
+
+            <scriptItem id="pane.wsheet.select_subnet_inputs_ql">
+                <label>All Subnet Inputs</label>
+                <scriptCode><![CDATA[
+import qlibutils
+qlibutils.select_netview_nodes(kwargs, lambda n: n.networkItemType().name()=="SubnetIndirectInput", allItems=True)
                 ]]></scriptCode>
             </scriptItem>
 <!--
@@ -296,10 +351,21 @@ for s in sel:
                 <label>Hide Comment</label>
                 <scriptCode><![CDATA[
 sel = hou.selectedNodes()
-for s     try:
+for s in sel:
+    try:
         hou.hscript("opset -Y off %s" % s.path())
     except:
         pass
+                ]]></scriptCode>
+            </scriptItem>
+
+            <separatorItem />
+
+            <scriptItem id="pane.wsheet.reset_node_color_shape_ql">
+                <label>Reset Node Color and Shape</label>
+                <scriptCode><![CDATA[
+sel = hou.selectedNodes()
+import qlibutils; qlibutils.reset_nodes(kwargs, sel)
                 ]]></scriptCode>
             </scriptItem>
 
@@ -356,12 +422,36 @@ import qlibutils; qlibutils.hdapath_to_clipboard()
 
 
         <subMenu id = "paste_from_clipboard_submenu_ql">
-
             <label>Paste</label>
+
             <scriptItem id="pane.wsheet.paste_from_clipboard_ql">
                 <label>Clipboard as Text/Image...</label>
                 <scriptCode><![CDATA[
 import qlibutils; qlibutils.paste_clipboard_to_netview(kwargs)
+                ]]></scriptCode>
+            </scriptItem>
+
+            <scriptItem id="pane.wsheet.paste_existing_image_ql">
+                <label>Existing Pasted Image...</label>
+                <expression>
+                    import qlibutils
+                    return qlibutils.hip_has_pasted_images(kwargs)
+                </expression>
+                <scriptCode><![CDATA[
+import qlibutils; qlibutils.paste_existing_image(kwargs)
+                ]]></scriptCode>
+            </scriptItem>
+
+            <separatorItem />
+
+            <scriptItem id="pane.wsheet.paste_path_as_objectmerge_ql">
+                <label>Copied Node(s) as Object Merge SOP...</label>
+                <expression>
+                    import qlibutils
+                    return qlibutils.clipboard_has_node_paths(kwargs)
+                </expression>
+                <scriptCode><![CDATA[
+import qlibutils; qlibutils.paste_clipboard_as_object_merge(kwargs)
                 ]]></scriptCode>
             </scriptItem>
 
@@ -374,7 +464,7 @@ import qlibutils; qlibutils.paste_clipboard_to_netview(kwargs)
         <subMenu id = "comment_submenu_ql">
             <label>Comment</label>
 
-           <scriptItem id="pane.wsheet.comment_cut_ql">
+            <scriptItem id="pane.wsheet.comment_cut_ql">
                 <label>Cut</label>
                 <scriptCode><![CDATA[
 import qlibutils
@@ -385,7 +475,7 @@ if sel:
                 ]]></scriptCode>
             </scriptItem>
 
-           <scriptItem id="pane.wsheet.comment_copy_ql">
+            <scriptItem id="pane.wsheet.comment_copy_ql">
                 <label>Copy</label>
                 <scriptCode><![CDATA[
 import qlibutils

@@ -8,9 +8,10 @@
 
 import hou
 
+import datetime
 import glob
 import os
-import platform
+import sys
 import re
 import subprocess
 import traceback
@@ -19,12 +20,15 @@ import traceback
 from hutil import Qt
 import nodegraphutils
 
+FLASH_SECONDS = 6.0
+
 
 # TODO: msg functions with exception handling
 
 
-def is_platform(name='none'):
-    return name.lower() in platform.system().lower()
+def is_platform(name):
+    assert type(name) is str
+    return sys.platform.lower().startswith(name.lower())
 
 def is_linux():
     return is_platform('linux')
@@ -33,16 +37,38 @@ def is_windows():
     return is_platform('win')
 
 def is_mac():
-    return is_platform('mac')
+    return is_platform('darwin')
 
+
+def houVersionAsFloat():
+    v = hou.applicationVersion()
+    return float( "%d.%d" % (v[0], v[1], ) )
 
 
 def statmsg(msg, warn=False):
     """.
     """
-    s = hou.severityType.Warning if warn else hou.severityType.Message
+    assert type(msg) is str
+    s = hou.severityType.ImportantMessage if warn else hou.severityType.Message
+    if warn:
+        msg = "WARNING: %s" % msg
     if hou.isUIAvailable():
         hou.ui.setStatusMessage(msg, severity=s)
+
+
+def ynreq(text="Are you sure?",
+    buttons=("Yes", "No", ) ):
+    """Shows an "Are you sure Y/N" style yes/no dialog.
+    """
+    do_it = 1
+    try:
+        do_it = hou.ui.displayMessage(text,
+            buttons=buttons,
+            default_choice=1, close_choice=1)
+    except:
+        print "ERROR: %s" % traceback.format_exc()
+    return do_it==0
+
 
 
 def set_namespace_aliases(prefix="qLib::", alias=True, verbose=False):
@@ -129,7 +155,7 @@ def to_clipboard(contents="", env=None):
 def do_crash_recovery(calledFromUI=False):
     """Performs crash recovery from an emergency-saved file.
     """
-    tmpdir = str(hou.getenv("TEMP") or hou.getenv("HOUDINI_TEMP_DIR"))
+    tmpdir = str(hou.getenv("HOUDINI_TEMP_DIR") or hou.getenv("TEMP"))
     files = glob.glob(os.path.join(tmpdir, '*.hip'))
 
     uicall = calledFromUI
@@ -176,8 +202,7 @@ def do_crash_recovery(calledFromUI=False):
                 'NOTE: Update mode is set to "Manual" to avoid potential re-crashes.\n' \
                 '\n%s' % msg
 
-        d = hou.ui.displayMessage(msg, buttons=("DELETE", "Skip", ))
-        if d == 0:
+        if ynreq(msg, buttons=("DELETE", "Skip", )):
             files = \
                 glob.glob(os.path.join(tmpdir, 'crash.*')) + \
                 glob.glob(os.path.join(tmpdir, '*.hip'))
@@ -281,102 +306,6 @@ def nodes_to_clipboard(fullPaths=False, hdaTypeNames=False):
     to_clipboard(text)
 
 
-def toggle_abs_rel_path(kwargs):
-    """Converts between absolute and relative OP paths.
-    (Called from PARMmenu.xml)
-    """
-    if 'parms' in kwargs:
-        for parm in kwargs['parms']:
-            try:
-                node = parm.node()
-                path = parm.evalAsString()
-
-                target = node.node(path)
-
-                path_rel = node.relativePathTo(target)
-                path_abs = target.path()
-
-                r = path_rel if path==path_abs else path_abs
-
-                parm.set(r)
-            except:
-                pass
-
-
-def add_parm_value_multiplier(kwargs, add_exponent=False):
-    """Adds a value/multipler parameter pair to the specified parameter.
-    (Called from PARMmenu.xml)
-    """
-    p = kwargs['parms'][0]
-    try:
-        n = p.node()
-
-        v = p.eval()
-        t = p.parmTemplate()
-        g = n.parmTemplateGroup()
-
-        pn = t.name()
-        pl = t.label()
-        pvn = '%s_value' % pn
-        pmn = '%s_mult' % pn
-        pxn = '%s_exp' % pn
-        t = hou.FloatParmTemplate(name=p.name(), label="...", num_components=1)
-
-        expr = "ch('%s') * ch('%s')" % (pvn, pmn, )
-
-        if not n.parm(pvn) and not n.parm(pmn):
-            # value
-            t.setName(pvn)
-            t.setLabel('%s (v)' % pl)
-            t.setDefaultValue( (v, ) )
-            g.insertAfter(pn, t)
-            # mult
-            t.setName(pmn)
-            t.setLabel('%s (%%)' % pl)
-            t.setMinValue(0.0)
-            t.setMaxValue(2.0)
-            t.setDefaultValue( (1.0, ) )
-            g.insertAfter(pvn, t)
-
-            if add_exponent and not n.parm(pxn):
-                # exp
-                t.setName(pxn)
-                t.setLabel('%s (exp)' % pl)
-                t.setMinValue(0.001)
-                t.setMaxValue(4.0)
-                t.setDefaultValue( (2.0, ) )
-                g.insertAfter(pmn, t)
-
-                expr = "ch('%s') * pow(ch('%s'), ch('%s'))" % (pvn, pmn, pxn, )
-
-            # add parms
-            n.setParmTemplateGroup(g)
-
-            p.setExpression(expr)
-        else:
-            hou.ui.setStatusMessage("Value/multiplier params already exist for %s" % p.path(),
-                severity=hou.severityType.Warning)
-    except:
-        hou.ui.setStatusMessage("couldn't set up value/multiplier parameters on %s" % p.path(),
-            severity=hou.severityType.Error)
-
-
-def set_ramp_basis(kwargs, ramp_basis):
-    """Set all knots on a ramp to the specified type.
-    (Called from PARMmenu.xml)
-    """
-    try:
-        p = kwargs['parms'][0]
-        v = p.eval()
-        num_keys = len(v.basis())
-        new_basis = (ramp_basis, ) * num_keys
-        new_ramp = hou.Ramp(new_basis, v.keys(), v.values())
-        p.set(new_ramp)
-    except:
-        hou.ui.setStatusMessage("couldn't set ramp interpolation type on %s" % p.path(),
-            severity=hou.severityType.Error)
-
-
 def find_camera(oppattern, path=None):
     """Finds a camera OBJ within nested subnets and returns its full path.
     """
@@ -413,13 +342,14 @@ def backup_rop_output_file():
 def remove_embedded_hdas():
     """Remove all embedded HDAs from the scene.
     """
-    do_it = hou.ui.displayMessage(
+    do_it = ynreq(
         "Remove all Embdedded HDAs (OTLs) from the current scene?\n"
-        "Warning: This cannot be undone!",
-        buttons=("Ok", "Cancel", ),
-        default_choice=1, close_choice=1)
+        "Warning: This cannot be undone!\n\n"
+        "NOTE: Embedded definitions that don't have a non-embedded version available\n"
+        "will not be removed.",
+        buttons=("Ok", "Cancel", ))
 
-    if do_it==0:
+    if do_it:
         hou.hda.uninstallFile("Embedded")
 
 
@@ -429,15 +359,63 @@ def find_same_nodes(nodes):
 
     def type_name(n):
         """Build a (not exactly correct) full typename (but without the asset version)."""
-        return "::".join(n.type().nameComponents()[0:-1])
+        r = n.networkItemType().name().lower()
+        if r=="node":
+            r = "::".join(n.type().nameComponents()[0:-1])
+        return r
 
     r = []
-    types = set()
-    for n in nodes:
-        types.add(type_name(n))
+    if len(nodes)>0:
+        types = set()
+        for n in nodes:
+            types.add(type_name(n))
 
-    all = nodes[0].parent().children()
-    r = [ n for n in all if type_name(n) in types ]
+        all = nodes[0].parent().allItems()
+        r = [ n for n in all if type_name(n) in types ]
+    return r
+
+
+def find_same_colored(nodes):
+    """Find nodes with the same color(s) as the specified node(s).
+    TODO:
+        - make sure there's no need for per-component floating point comparison
+    """
+    r = []
+    if len(nodes)>0:
+        colors = set()
+        for n in nodes:
+            colors.add(n.color())
+
+        all = nodes[0].parent().allItems()
+        r = [ n for n in all if n.color() in colors ]
+    return r
+
+
+def get_shape_name(node):
+    """Return shape name of the node.
+    """
+    #TODO: assert: node is a node object
+    shape = None
+    try:
+        shape = node.userData("nodeshape") or node.type().defaultShape()
+    except:
+        pass
+    return shape
+
+
+def find_same_shape(nodes):
+    """Find nodes with the same shape(s) as the specified node(s).
+    TODO:
+        - make sure there's no need for per-component floating point comparison
+    """
+    r = []
+    if len(nodes)>0:
+        shapes = set()
+        for n in nodes:
+            shapes.add(get_shape_name(n))
+
+        all = nodes[0].parent().allItems()
+        r = [ n for n in all if get_shape_name(n) in shapes ]
     return r
 
 
@@ -449,40 +427,6 @@ def get_netview_path(kwargs):
     else:
         # TODO: raise an error
         return None
-
-
-def add_to_selection(nodes, kwargs):
-    """Extends the current node selection with 'nodes', according to
-    the modifier keys in kwargs.
-
-    no modifier:    replace selection
-    shift:          add to selection
-    ctrl:           remove from selection
-    ctrl+shift:     intersect with selection
-    """
-    haz_shift = kwargs["shiftclick"] or kwargs['altclick']
-    haz_ctrl = kwargs["ctrlclick"]
-
-    current = set(hou.selectedNodes())
-    sel = set(nodes)
-
-    if haz_shift or haz_ctrl:
-        # we got some modifier pressed
-        if haz_shift:
-            if haz_ctrl:
-                # shift+ctrl: intersection
-                sel = sel.intersection(current)
-            else:
-                # shift: union
-                sel = sel.union(current)
-        else:
-            # ctrl: remove from selection
-            sel = current.difference(sel)
-
-    if sel is not None:
-        hou.clearAllSelected()
-        for n in sel:
-            n.setSelected(True)
 
 
 def is_node_locked(node):
@@ -534,18 +478,201 @@ def has_author(node, authors, username_only=False):
     return a in authors
 
 
-def select_netview_nodes(kwargs, criteria):
-    """.
+def parm_is_keyframed(parm):
+    """Checks if parm is keyframed.
+    A parm is considered keyframed if there's at least 2 keyframes,
+    or has a single one with a curve expression thing on it (ending with "()")
+
+    parm: a hou.Parm
+    """
+    num_keys = len(parm.keyframes())
+    if num_keys>1:
+        return True
+    if num_keys==1:
+        k = parm.keyframes()[0]
+        # single keyframe: should be a hscript expression of "bezier()" or similar
+        return \
+            k.expressionLanguage() == hou.exprLanguage.Hscript and \
+            re.match("^[a-z]*\(\)$", k.expression())
+    return False
+
+
+def parm_is_time_dependent(parm):
+    """Checks if parm is time-dependent.
+    """
+    return parm.isTimeDependent()
+
+
+def has_parm_with_criteria(node, criteria):
+    """Returns True if the specified node has any parms
+    that match a given criteria.
+
+    criteria: (lambda) function with a hou.Parm as argument
+    """
+    parms = node.parms() # should it be parmTuples()?
+    for parm in parms:
+        if criteria(parm):
+            return True
+    return False
+
+
+def has_keyframed_parms(node):
+    """Check if a node has keyframed parms.
+    """
+    return has_parm_with_criteria(node, parm_is_keyframed)
+
+
+def has_time_dependent_parms(node):
+    """Check if a node has time-dependent parms.
+    """
+    return has_parm_with_criteria(node, parm_is_time_dependent)
+
+
+def add_to_selection(nodes, kwargs, selectMode=None):
+    """Extends the current node selection with 'nodes', according to
+    the modifier keys in kwargs.
+
+    no modifier:    replace selection
+    shift, alt:     add to selection
+    ctrl:           remove from selection
+    ctrl+shift:     intersect with selection
+    """
+    assert selectMode is None or type(selectMode) is str
+
+    haz_shift = kwargs["shiftclick"] or kwargs['altclick']
+    haz_ctrl = kwargs["ctrlclick"]
+
+    if selectMode is None:
+        # determine select mode based on kwargs
+        if haz_shift or haz_ctrl:
+            # we got some modifier pressed
+            if haz_shift:
+                    # shift: add (union), shift+ctrl: intersect
+                    selectMode = "intersect" if haz_ctrl else "add"
+            else:
+                # ctrl: remove from selection
+                selectMode = "remove"
+    else:
+        selectMode = selectMode.lower()
+
+    current = set(hou.selectedItems())
+    sel = set(nodes)
+    sel_length_old = len(sel)
+
+    if selectMode=="intersect":
+        sel = sel.intersection(current)
+    elif selectMode=="add":
+        sel = sel.union(current)
+    elif selectMode=="remove":
+        sel = current.difference(sel)
+    else:
+        selectMode = "replace"
+
+    if sel is not None:
+        hou.clearAllSelected()
+        for n in sel:
+            n.setSelected(True)
+
+    # report back
+
+    msg0 = "Select (%s) %d matches: Now %d selected (was %d)" \
+        % ( selectMode.lower(), sel_length_old, len(sel), len(current), )
+
+    if "editor" in kwargs:
+        kwargs["editor"].flashMessage("BUTTONS_reselect", msg0, FLASH_SECONDS)
+
+    statmsg("%s   (ALT: add to selection"
+        ", CTRL:remove from selecton"
+        ", CTRL+ALT:intersect with selection)" % msg0)
+
+
+def select_netview_nodes(kwargs, criteria, allItems=False, selectMode=None):
+    """Select nodes.
     """
     path = get_netview_path(kwargs)
-    sel = [ n for n in path.children() if criteria(n) ]
-    add_to_selection(sel, kwargs)
+    child_func = path.allItems if allItems else path.children
+    sel = None
+    try:
+        sel = [ n for n in child_func() if criteria(n) ]
+    except:
+        statmsg("Couldn't select / Selection criteria not applicable", warn=True)
+
+    if sel is not None:
+        add_to_selection(sel, kwargs, selectMode=selectMode)
 
 
-def set_netview_selection(kwargs, criteria):
-    path = get_netview_path(kwargs)
-    for n in path.children():
-        n.setSelected(criteria(n))
+def set_netview_selection(kwargs, criteria, allItems=False):
+    """Replace selection with nodes matching a criteria function.
+    """
+    select_netview_nodes(kwargs, criteria, allItems=allItems, selectMode="replace")
+
+
+
+def reset_nodes(kwargs, nodes, resetColor=True, resetShape=True):
+    """.
+    """
+    for n in nodes:
+        if resetColor:
+            d = n.type().defaultColor()
+            if d!=n.color():
+                n.setColor(d)
+        if resetShape:
+            if "nodeshape" in n.userDataDict():
+                n.destroyUserData("nodeshape")
+
+
+
+def embedded_img_prefix(image_name):
+    """.
+    """
+    return "opdef:/qLib::Object/embedded_images?%s" % image_name
+
+
+def embedded_hda_typename():
+    return 'qLib::embedded_images'
+
+
+def get_embedded_img_hdadef():
+    category = hou.objNodeTypeCategory()
+    embedded = 'Embedded'
+    hda_def = hou.hdaDefinition(category, embedded_hda_typename(), embedded)
+    return hda_def
+
+
+def get_existing_images(kwargs):
+    """Return a list of paths (opdef:/...) for existing images in the hip file.
+    """
+    R = []
+    hda_def = get_embedded_img_hdadef()
+    if hda_def:
+        R = [ n for n in hda_def.sections() if n.endswith(".png") ]
+    return R
+
+
+def hip_has_pasted_images(kwargs):
+    """.
+    """
+    return len(get_existing_images(kwargs))>0
+
+
+def add_image_to_netview(image_path, pane, pwd):
+    """.
+    """
+    # add image to network view
+    image = hou.NetworkImage(image_path)
+    image.setBrightness(0.75)
+    #image.setRect(hou.BoundingRect(0, 0, 5, 2))
+    s = pane.visibleBounds()
+    center = s.center()
+    s.translate(-center)
+    s.scale((0.25, 0.25, ))
+    s.translate(center)
+    image.setRect(s)
+
+    images = nodegraphutils.loadBackgroundImages(pwd)
+    images.append(image)
+    pane.setBackgroundImages(images)
+    nodegraphutils.saveBackgroundImages(pwd, images)
 
 
 def paste_clipboard_to_netview(kwargs):
@@ -571,20 +698,36 @@ def paste_clipboard_to_netview(kwargs):
         else:
             # paste image
 
-            # TODO: generate automatic name
-            image_name = ''
-            ok, image_name = hou.ui.readInput('Enter name of image to be pasted:',
-                buttons=('Ok', 'Cancel', ), close_choice=1,
+            # generate automatic name
+            image_name = 'image_' + datetime.datetime.now().replace(microsecond=0).isoformat('_').replace(":", "")
+
+            msg = []
+
+            images = sorted(get_existing_images(kwargs))
+            if len(images)>0:
+                msg.append("Existing images:")
+                c=0
+                for i in images:
+                    msg.append("   - %s" % i)
+                    c+=1
+                    if c>=20:
+                        break
+                if c<len(images):
+                    msg.append("   - (...)  ")
+                msg.append('\n(Images are stored in an embedded "qLib::embedded_images" /obj node).')
+
+            msg = "\n".join(msg)
+
+            ok, image_name = hou.ui.readInput("Enter name of image to be pasted",
+                buttons=('Ok', 'Cancel', ), close_choice=1, help=msg,
                 initial_contents=image_name)
             if image_name=='':
                 ok = 1
             image_name += '.png'
 
             if ok==0:
-                category = hou.objNodeTypeCategory()
-                hda_typename = 'qLib::embedded_images'
-                embedded = 'Embedded'
-                hda_def = hou.hdaDefinition(category, hda_typename, embedded)
+                hda_typename = embedded_hda_typename()
+                hda_def = get_embedded_img_hdadef()
                 
                 # create hda definition if doesn't exist
                 if not hda_def:
@@ -592,7 +735,7 @@ def paste_clipboard_to_netview(kwargs):
                     hda_node = temp_node.createDigitalAsset(name=hda_typename, save_as_embedded=True)
                     hda_node.destroy()
         
-                hda_def = hou.hdaDefinition(category, hda_typename, embedded)
+                hda_def = get_embedded_img_hdadef()
         
                 # create an instance in /obj if doesn't exist
                 node = None
@@ -600,6 +743,9 @@ def paste_clipboard_to_netview(kwargs):
                 
                 if len(nodes)==0:
                     node = hou.node('/obj').createNode(hda_typename, node_name="embedded_images")
+                    node.setComment("embedded BG images for network views\n(do not delete)")
+                    hou.hscript("opset -Y on %s" % node.path())
+                    pass # set comment "do not delete"
         
                 # add clipboard image to hda definition (as section)
                 ba = Qt.QtCore.QByteArray();
@@ -610,20 +756,23 @@ def paste_clipboard_to_netview(kwargs):
                 hda_def.addSection(image_name, str(buffer.data()))
                 
                 # add image to network view
-                image = hou.NetworkImage("opdef:/qLib::Object/embedded_images?%s" % image_name)
-                image.setBrightness(0.75)
-                #image.setRect(hou.BoundingRect(0, 0, 5, 2))
-                s = pane.visibleBounds()
-                center = s.center()
-                s.translate(-center)
-                s.scale((0.25, 0.25, ))
-                s.translate(center)
-                image.setRect(s)
+                add_image_to_netview(embedded_img_prefix(image_name), pane, pwd)
 
-                images = nodegraphutils.loadBackgroundImages(pwd)
-                images.append(image)
-                pane.setBackgroundImages(images)
-                nodegraphutils.saveBackgroundImages(pwd, images)
+
+def paste_existing_image(kwargs):
+    """.
+    """
+    images = sorted(get_existing_images(kwargs))
+    pane = kwargs.get('editor', None)
+    sel = hou.ui.selectFromList(images, exclusive=True,
+                                title="Paste Existing Image",
+                                message="Select Image to Paste")
+    if len(sel)>0 and pane:
+        image_name = images[sel[0]]
+        pwd = pane.pwd()
+        add_image_to_netview(embedded_img_prefix(image_name), pane, pwd)
+
+
 
 
 def embed_selected_hdas(kwargs):
@@ -645,12 +794,109 @@ def embed_selected_hdas(kwargs):
     msg = "Embed the following HDA(s) into the current hip file?\n\n"
     msg += "\n".join([ "HDA:  %s\npath:  %s\n" % (d.nodeType().name(), d.libraryFilePath(), ) for d in defs ])
 
-    do_it = hou.ui.displayMessage(
-        msg,
-        buttons=("Embed", "Cancel", ),
-        default_choice=1, close_choice=1)
-
-    if do_it==0:
+    if ynreq(msg, buttons=("Embed", "Cancel", )):
         for d in defs:
             d.copyToHDAFile("Embedded")
             # TODO: switch definition? this seems to switch it
+#
+
+
+def show_houdinipath(kwargs):
+    """Displays entries .
+    """
+    hou.ui.displayMessage(
+        "Houdini Path ($HOUDINI_PATH) entries (in order)",
+        details = "\n".join(hou.houdiniPath()),
+        details_expanded=True)
+
+
+def show_shellcmd_results(kwargs, cmd, label):
+    """Runs a shell command and displays its results.
+    """
+
+    try:
+        result = os.popen(cmd).read()
+        hou.ui.displayMessage(
+            "%s\n(shell command: '%s')" % (label, cmd, ),
+            details = result,
+            details_expanded=True
+        )
+
+    except:
+        print "ERROR: %s" % traceback.format_exc()
+
+
+def displayHelpPath(path):
+    """Wrapper for displaying a help page.
+    """
+    assert type(path) is str
+    hou.ui.curDesktop().displayHelpPath(path)
+
+
+def clipboard_has_node_paths(kwargs):
+    """Return True if the clipboard contains valid node path(s).
+    """
+    R = False
+    n = hou.ui.getTextFromClipboard().split()
+    n = n[0] if len(n)>0 else ""
+    R = hou.node(n)!=None
+    return R
+
+
+def paste_clipboard_as_object_merge(kwargs):
+    """Paste copied clipboard node path(s) as Object Merge SOP(s).
+    """
+    try:
+        nodes = [ hou.node(n) for n in hou.ui.getTextFromClipboard().split() ]
+
+        haz_shift = kwargs["shiftclick"] or kwargs['altclick']
+
+        objm = None
+        root = kwargs['editor'].pwd()
+        offset = (0, 0, )
+
+        for node in nodes:
+            if objm==None or haz_shift:
+                objm = root.createNode("object_merge",
+                    node_name="objm_%s" % node.name())
+                objm.setPosition( kwargs['editor'].visibleBounds().center() )
+                objm.move(offset)
+                offset = ( offset[0]+1.0, offset[1]-1.0, )
+                objm.parm("numobj").set(0)
+
+            if objm:
+                n = objm.parm("numobj")
+                i = n.eval()+1
+                n.set(i)
+                objm.parm("objpath%d" %i).set(objm.relativePathTo(node))
+    except:
+        print "ERROR: %s" % traceback.format_exc()
+
+
+
+def update_gallery_items(kwargs=None):
+    """Reload all gallery items.
+    """
+    galleries = hou.galleries.galleries()
+    gal_files = set() # a set of all currently loaded gallery files
+
+    # collect all loaded galleries and remove them
+    for g in galleries:
+        try:
+            f = re.search('"([^\"]+)"', repr(g)).group(1)
+            gal_files.add(f)
+            #print "found:", f
+            hou.galleries.removeGallery(f)
+        except:
+            pass
+
+    # look for new gallery files in the paths, and collect them
+    paths = hou.houdiniPath("HOUDINI_GALLERY_PATH")
+    for path in paths:
+        files = glob.glob(path+"/*.gal")
+        gal_files.update(files)
+
+    # install all found gallery files
+    for file in gal_files:
+        #print "installing:", file
+        hou.galleries.installGallery(file)

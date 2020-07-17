@@ -56,6 +56,10 @@ groupexpression/snippet
     [qL] Group by Normal/Lookat Point
     degrees( acos(dot(@N, normalize(chv("position")-@P))) ) < chf("angle")
 
+groupexpression/snippet
+    [qL] Group by Same ids as in Second Input
+    findattribval(1, chs("grouptype"), "id", @id)>=0
+
 
 
 attribexpression/snippet
@@ -131,6 +135,11 @@ attribwrangle/snippet
     v@P += v;
 
 attribwrangle/snippet
+    [qL] Extract packed prim full transform
+    // Use the 'xform' attribute with a Transform by Attrib SOP
+    4@xform = primintrinsic(0, "packedfulltransform", @primnum);
+
+attribwrangle/snippet
     [qL] id attribute to name ("pieceNNN")
     s@name = sprintf("piece%d", i@id);
 
@@ -153,11 +162,30 @@ popforce/localforceexpression
     force *= fit01( pow(rand(@id*12+34),  1.0),  0.25,  1.0 );
 
 popforce/localnoiseexpression
-    [qL] Magnitude by Ramp over Lifespan
+    [qL] Amplitude by Ramp over Lifespan
     amp *= chramp("amp_by_age", @nage);
 
 popforce/localnoiseexpression
-    [qL] Random Magnitude from id
-    // random magnitude from id        (exp,   min,   max)
+    [qL] Random Amplitude from id
+    // random amplitude from id        (exp,   min,   max)
     amp *= fit01( pow(rand(@id*12+34),  1.0),  0.25,  1.0 );
+
+
+popadvectbyvolumes/localexpression
+    [qL] Random Velocity Scale from id
+    //
+    velscale *= fit01( random(@id*12+34), 0.25, 1.0 );
+
+    // update velscale correctly for negative aged particles
+    //
+    if (@age<0.0) {
+        velscale *= (@age+@TimeInc) / @TimeInc;
+    }
+
+popadvectbyvolumes/localexpression
+    [qL] Update velscale correctly for negative aged particles
+    //
+    if (@age<0.0) {
+        velscale *= (@age+@TimeInc) / @TimeInc;
+    }
 

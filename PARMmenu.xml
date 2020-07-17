@@ -43,19 +43,22 @@
 	<menu>
 
 		<scriptItem id="toggle_abs_rel_path_ql">
-			<label>Toggle Absolute/Relative Path [qL]</label>
+			<label>Toggle Absolute/Relative Path(s) [qL]</label>
 			<context>
-				<expression>len(kwargs['parms'])>0 and type(kwargs['parms'][0].parmTemplate()) is hou.StringParmTemplate</expression>
+					<expression>
+						import qlibmenutools
+						return qlibmenutools.parm_is_string(kwargs)
+					</expression>
 			</context>
 			<modifyItem><insertAfter>revert_to_prev_val</insertAfter></modifyItem>
 			<scriptCode><![CDATA[
-import qlibutils; qlibutils.toggle_abs_rel_path(kwargs)
+import qlibmenutools; qlibmenutools.toggle_abs_rel_path(kwargs)
 ]]></scriptCode>
 		</scriptItem>
 
 
 
-		<subMenu id="qlib_menu">
+		<subMenu id="qlib_more_menu">
 			<label>More [qL]</label>
 			<modifyItem><insertAfter>motion_effects_menu</insertAfter></modifyItem>
 
@@ -63,21 +66,41 @@ import qlibutils; qlibutils.toggle_abs_rel_path(kwargs)
 			<scriptItem id="ql_open_in_file_browser">
 				<label>Open as Path in File Browser...</label>
 				<context>
-					<expression>len(kwargs['parms'])>0 and type(kwargs['parms'][0].parmTemplate()) is hou.StringParmTemplate</expression>
+					<expression>
+						import qlibmenutools
+						return qlibmenutools.parm_is_fspath(kwargs)
+					</expression>
 				</context>
 				<scriptCode><![CDATA[
-import qlibutils, os
-qlibutils.open_dir( os.path.dirname(str(kwargs['parms'][0].eval())) )
+import qlibmenutools; qlibmenutools.open_as_fs_path(kwargs)
 ]]></scriptCode>
 			</scriptItem>
 
+			<separatorItem/>
+
 			<scriptItem id="ql_select_target_op">
-				<label>Select (Add) Target Node</label>
+				<label>Select/Add Target Node(s)</label>
 				<context>
-					<expression>len(kwargs['parms'])>0 and kwargs['parms'][0].evalAsNode() is not None</expression>
+					<expression>
+						import qlibmenutools
+						return qlibmenutools.parm_has_target_node(kwargs)
+					</expression>
 				</context>
 				<scriptCode><![CDATA[
-kwargs['parms'][0].evalAsNode().setSelected(True)
+import qlibmenutools; qlibmenutools.select_target_nodes(kwargs)
+]]></scriptCode>
+			</scriptItem>
+
+			<scriptItem id="ql_expand_target_op_wildcards">
+				<label>Expand Target Node Path Wildcards</label>
+				<context>
+					<expression>
+						import qlibmenutools
+						return qlibmenutools.parm_has_target_node(kwargs)
+					</expression>
+				</context>
+				<scriptCode><![CDATA[
+import qlibmenutools; qlibmenutools.expand_target_wildcards(kwargs)
 ]]></scriptCode>
 			</scriptItem>
 
@@ -87,26 +110,28 @@ kwargs['parms'][0].evalAsNode().setSelected(True)
 			<scriptItem id="ql_set_to_parent_network_1">
 				<label>[subnet]: Parent Network, Input #1 (0)</label>
 				<context>
-					<expression>len(kwargs['parms'])>0 and type(kwargs['parms'][0].parmTemplate()) is hou.StringParmTemplate</expression>
+					<expression>
+						import qlibmenutools
+						return qlibmenutools.parm_is_string(kwargs)
+					</expression>
 				</context>
 				<scriptCode><![CDATA[
-try:
-	kwargs['parms'][0].set("%s`opinputpath('..', 0)`" % ('op:' if kwargs['ctrlclick'] else '') )
-except:
-	pass
+import qlibmenutools
+qlibmenutools.set_parent_opinput(kwargs, 0)
 ]]></scriptCode>
 			</scriptItem>
 
 			<scriptItem id="ql_set_to_parent_network_2">
 				<label>[subnet]: Parent Network, Input #2 (1)</label>
 				<context>
-					<expression>len(kwargs['parms'])>0 and type(kwargs['parms'][0].parmTemplate()) is hou.StringParmTemplate</expression>
+					<expression>
+						import qlibmenutools
+						return qlibmenutools.parm_is_string(kwargs)
+					</expression>
 				</context>
 				<scriptCode><![CDATA[
-try:
-	kwargs['parms'][0].set("%s`opinputpath('..', 1)`" % ('op:' if kwargs['ctrlclick'] else '') )
-except:
-	pass
+import qlibmenutools
+qlibmenutools.set_parent_opinput(kwargs, 1)
 ]]></scriptCode>
 			</scriptItem>
 
@@ -114,13 +139,14 @@ except:
 			<scriptItem id="ql_set_to_parent_network_3">
 				<label>[subnet]: Parent Network, Input #3 (2)</label>
 				<context>
-					<expression>len(kwargs['parms'])>0 and type(kwargs['parms'][0].parmTemplate()) is hou.StringParmTemplate</expression>
+					<expression>
+						import qlibmenutools
+						return qlibmenutools.parm_is_string(kwargs)
+					</expression>
 				</context>
 				<scriptCode><![CDATA[
-try:
-	kwargs['parms'][0].set("%s`opinputpath('..', 2)`" % ('op:' if kwargs['ctrlclick'] else '') )
-except:
-	pass
+import qlibmenutools
+qlibmenutools.set_parent_opinput(kwargs, 2)
 ]]></scriptCode>
 			</scriptItem>
 
@@ -128,13 +154,14 @@ except:
 			<scriptItem id="ql_set_to_parent_network_4">
 				<label>[subnet]: Parent Network, Input #4 (3)</label>
 				<context>
-					<expression>len(kwargs['parms'])>0 and type(kwargs['parms'][0].parmTemplate()) is hou.StringParmTemplate</expression>
+					<expression>
+						import qlibmenutools
+						return qlibmenutools.parm_is_string(kwargs)
+					</expression>
 				</context>
 				<scriptCode><![CDATA[
-try:
-	kwargs['parms'][0].set("%s`opinputpath('..', 3)`" % ('op:' if kwargs['ctrlclick'] else '') )
-except:
-	pass
+import qlibmenutools
+qlibmenutools.set_parent_opinput(kwargs, 3)
 ]]></scriptCode>
 			</scriptItem>
 
@@ -145,29 +172,36 @@ except:
 			<scriptItem id="ql_add_parm_value_multiplier">
 				<label>Add Value/Multiplier to Parameter</label>
 				<context>
-					<expression>len(kwargs['parms'])>0 and type(kwargs['parms'][0].parmTemplate()) is hou.FloatParmTemplate</expression>
+					<expression>
+						import qlibmenutools
+						return qlibmenutools.parm_is_float(kwargs)
+					</expression>
 				</context>
 				<scriptCode><![CDATA[
-import qlibutils; reload(qlibutils);
-qlibutils.add_parm_value_multiplier(kwargs)
+import qlibmenutools; qlibmenutools.add_parm_value_multiplier(kwargs)
 ]]></scriptCode>
 			</scriptItem>
 
 			<scriptItem id="ql_add_parm_value_multiplier_exp">
 				<label>Add Value/Multiplier + Exponent</label>
 				<context>
-					<expression>len(kwargs['parms'])>0 and type(kwargs['parms'][0].parmTemplate()) is hou.FloatParmTemplate</expression>
+					<expression>
+						import qlibmenutools
+						return qlibmenutools.parm_is_float(kwargs)
+					</expression>
 				</context>
 				<scriptCode><![CDATA[
-import qlibutils; reload(qlibutils);
-qlibutils.add_parm_value_multiplier(kwargs, add_exponent=True)
+import qlibmenutools; qlibmenutools.add_parm_value_multiplier(kwargs, add_exponent=True)
 ]]></scriptCode>
 			</scriptItem>
 
 			<scriptItem id="ql_set_rampbasis_label">
 				<label>Set Ramp to...</label>
 				<context>
-					<expression>len(kwargs['parms'])>0 and type(kwargs['parms'][0].parmTemplate()) is hou.RampParmTemplate</expression>
+					<expression>
+						import qlibmenutools
+						return qlibmenutools.parm_is_ramp(kwargs)
+					</expression>
 				</context>
 			</scriptItem>
 
@@ -176,72 +210,114 @@ qlibutils.add_parm_value_multiplier(kwargs, add_exponent=True)
 			<scriptItem id="ql_set_rampbasis_Constant">
 				<label>Constant</label>
 				<context>
-					<expression>len(kwargs['parms'])>0 and type(kwargs['parms'][0].parmTemplate()) is hou.RampParmTemplate</expression>
+					<expression>
+						import qlibmenutools
+						return qlibmenutools.parm_is_ramp(kwargs)
+					</expression>
 				</context>
 				<scriptCode><![CDATA[
-import qlibutils; qlibutils.set_ramp_basis(kwargs, hou.rampBasis.Constant)
+import qlibmenutools; qlibmenutools.set_ramp_basis(kwargs, hou.rampBasis.Constant)
 ]]></scriptCode>
 			</scriptItem>
 
 			<scriptItem id="ql_set_rampbasis_linear">
 				<label>Linear</label>
 				<context>
-					<expression>len(kwargs['parms'])>0 and type(kwargs['parms'][0].parmTemplate()) is hou.RampParmTemplate</expression>
+					<expression>
+						import qlibmenutools
+						return qlibmenutools.parm_is_ramp(kwargs)
+					</expression>
 				</context>
 				<scriptCode><![CDATA[
-import qlibutils; qlibutils.set_ramp_basis(kwargs, hou.rampBasis.Linear)
+import qlibmenutools; qlibmenutools.set_ramp_basis(kwargs, hou.rampBasis.Linear)
 ]]></scriptCode>
 			</scriptItem>
 
 			<scriptItem id="ql_set_rampbasis_CatmullRom">
 				<label>Catmull-Rom</label>
 				<context>
-					<expression>len(kwargs['parms'])>0 and type(kwargs['parms'][0].parmTemplate()) is hou.RampParmTemplate</expression>
+					<expression>
+						import qlibmenutools
+						return qlibmenutools.parm_is_ramp(kwargs)
+					</expression>
 				</context>
 				<scriptCode><![CDATA[
-import qlibutils; qlibutils.set_ramp_basis(kwargs, hou.rampBasis.CatmullRom)
+import qlibmenutools; qlibmenutools.set_ramp_basis(kwargs, hou.rampBasis.CatmullRom)
 ]]></scriptCode>
 			</scriptItem>
 
 			<scriptItem id="ql_set_rampbasis_MonotoneCubic">
 				<label>Monotone Cubic</label>
 				<context>
-					<expression>len(kwargs['parms'])>0 and type(kwargs['parms'][0].parmTemplate()) is hou.RampParmTemplate</expression>
+					<expression>
+						import qlibmenutools
+						return qlibmenutools.parm_is_ramp(kwargs)
+					</expression>
 				</context>
 				<scriptCode><![CDATA[
-import qlibutils; qlibutils.set_ramp_basis(kwargs, hou.rampBasis.MonotoneCubic)
+import qlibmenutools; qlibmenutools.set_ramp_basis(kwargs, hou.rampBasis.MonotoneCubic)
 ]]></scriptCode>
 			</scriptItem>
 
 			<scriptItem id="ql_set_rampbasis_Bezier">
 				<label>Bezier</label>
 				<context>
-					<expression>len(kwargs['parms'])>0 and type(kwargs['parms'][0].parmTemplate()) is hou.RampParmTemplate</expression>
+					<expression>
+						import qlibmenutools
+						return qlibmenutools.parm_is_ramp(kwargs)
+					</expression>
 				</context>
 				<scriptCode><![CDATA[
-import qlibutils; qlibutils.set_ramp_basis(kwargs, hou.rampBasis.Bezier)
+import qlibmenutools; qlibmenutools.set_ramp_basis(kwargs, hou.rampBasis.Bezier)
 ]]></scriptCode>
 			</scriptItem>
 
 			<scriptItem id="ql_set_rampbasis_BSpline">
 				<label>B-Spline</label>
 				<context>
-					<expression>len(kwargs['parms'])>0 and type(kwargs['parms'][0].parmTemplate()) is hou.RampParmTemplate</expression>
+					<expression>
+						import qlibmenutools
+						return qlibmenutools.parm_is_ramp(kwargs)
+					</expression>
 				</context>
 				<scriptCode><![CDATA[
-import qlibutils; qlibutils.set_ramp_basis(kwargs, hou.rampBasis.BSpline)
+import qlibmenutools; qlibmenutools.set_ramp_basis(kwargs, hou.rampBasis.BSpline)
 ]]></scriptCode>
 			</scriptItem>
 
 			<scriptItem id="ql_set_rampbasis_Hermite">
 				<label>Hermite</label>
 				<context>
-					<expression>len(kwargs['parms'])>0 and type(kwargs['parms'][0].parmTemplate()) is hou.RampParmTemplate</expression>
+					<expression>
+						import qlibmenutools
+						return qlibmenutools.parm_is_ramp(kwargs)
+					</expression>
 				</context>
 				<scriptCode><![CDATA[
-import qlibutils; qlibutils.set_ramp_basis(kwargs, hou.rampBasis.Hermite)
+import qlibmenutools; qlibmenutools.set_ramp_basis(kwargs, hou.rampBasis.Hermite)
 ]]></scriptCode>
 			</scriptItem>
+
+		</subMenu>
+
+		<subMenu id="qlib_string_rel_ref_menu">
+			<label>Reference Upstream Parm [qL]</label>
+			<modifyItem><insertAfter>qlib_more_menu</insertAfter></modifyItem>
+			<context>
+					<expression>
+						import qlibmenutools
+						return qlibmenutools.parm_is_string(kwargs)
+					</expression>
+			</context>
+			<scriptMenuStripDynamic id="qlib_string_rel_ref_items">
+			<contentsScriptCode><![CDATA[
+			import qlibmenutools
+			return qlibmenutools.build_upstream_channel_refs_menu(kwargs)
+			]]></contentsScriptCode>
+			<scriptCode><![CDATA[
+import qlibmenutools; qlibmenutools.set_upstream_channel_ref_value(kwargs)
+]]></scriptCode>
+	</scriptMenuStripDynamic>
 
 		</subMenu>
 

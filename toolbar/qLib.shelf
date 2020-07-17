@@ -8,19 +8,19 @@
   <toolshelf name="qLib" label="qLib">
     <memberTool name="qLib::AccessShotNode"/>
     <memberTool name="qLib::ToggleViewportBackgroundColor"/>
-    <memberTool name="qLib::ToggleIntegerFrames"/>
-    <memberTool name="qLib::ReferenceCopy"/>
-    <memberTool name="qLib::AttribDisplayMarkers"/>
+    <memberTool name="qLib::camera_dolly_zoom_ql"/>
     <memberTool name="qLib::ToggleViewportTemplates"/>
     <memberTool name="qLib::ToggleViewportGuides"/>
+    <memberTool name="qLib::ReferenceCopy"/>
     <memberTool name="qLib::ToggleTimeDependencyDisplay"/>
     <memberTool name="qLib::ColorByAuthor"/>
+    <memberTool name="qLib::ToggleIntegerFrames"/>
     <memberTool name="qLib::FlushCaches"/>
     <memberTool name="qLib::CrashRecovery"/>
   </toolshelf>
 
   <tool name="qLib::AccessShotNode" label="::shot::" icon="NETWORKS_scene">
-    <helpText><![CDATA[#icon: COP2/invert
+    <helpText><![CDATA[#icon: NETWORKS/scene
 #context: obj
 #type: tool
 
@@ -30,9 +30,9 @@
 
 """Opens a floating parameter panel for scene Shot qL node(s).
 ---
-LMB: All Shot and Environment nodes
-Shift-LMB: Only "active" Shot(s) (visible/selectable)
-Alt-LMB: Environment nodes only
+LMB: All Shot and Environment nodes.
+Shift-LMB: Only "active" Shot(s) (visible/selectable).
+Alt-LMB: Environment nodes only.
 """
 
 @bugs Limitations
@@ -112,10 +112,10 @@ show_parms(shots, title="Scene Global(s)", kwargs=kwargs)
 *version 1*
 
 """Cycles between viewport color schemes (dark, grey, light).
-----
-LMB: Cycle background color
-Ctrl-LMB: Reset to black
-Shift-LMB: Reset to grey
+---
+LMB: Cycle background color.
+Ctrl-LMB: Reset to black.
+Shift-LMB: Reset to grey.
 """
 
 @bugs Limitations
@@ -153,7 +153,9 @@ except:
 bgs = { 'wb':'dark', 'bw':'grey', 'light':'light' }
 
 hou.hscript("viewdisplay -B %s *" % bg)
-hou.ui.setStatusMessage("Cycled background to %s" % bgs[bg].upper() )]]></script>
+msg = "Cycled background to %s" % bgs[bg].upper()
+hou.ui.setStatusMessage(msg)
+]]></script>
   </tool>
 
   <tool name="qLib::ToggleIntegerFrames" label="int.frames" icon="PLAYBAR_editable_keys">
@@ -166,16 +168,16 @@ hou.ui.setStatusMessage("Cycled background to %s" % bgs[bg].upper() )]]></script
 *version 1*
 
 """Toggle non-integer frame values on the playbar.
-----
-LMB: Toggle non-integer frames
-Shift-LMB: Switch to integer frames
+---
+LMB: Toggle non-integer frames.
+Shift-LMB: Switch to integer frames.
 """
 
 @usage Usage
 
-((LMB)):
+- ((LMB)):
     Toggle non-integer frames
-((Shift + LMB)):
+- ((Shift + LMB)):
     Switch to integer frames
 
 
@@ -188,10 +190,16 @@ _version 1_ ---
 
 shift = kwargs['shiftclick']
 
+fr = hou.playbar.frameRange()
+pr = hou.playbar.playbackRange()
+
 m = not hou.playbar.usesIntegerFrames()
 if shift:
     m = True
 hou.playbar.setUseIntegerFrames(m)
+
+hou.playbar.setFrameRange(fr[0], fr[1])
+hou.playbar.setPlaybackRange(pr[0], pr[1])
 
 hou.ui.setStatusMessage(" ---- Using Integer Frames: %s" % ("ON" if m else "OFF"))
 ]]></script>
@@ -208,7 +216,8 @@ hou.ui.setStatusMessage(" ---- Using Integer Frames: %s" % ("ON" if m else "OFF"
 
 """Creates a Reference Copy where the reference source is easy to replace.
 ---
-Alt-LMB: Use relative path for source operator.
+LMB: Create reference copy with a single link to the source node.
+Alt-LMB: Use relative path for source node.
 """
 
 This function is the same as the original _Reference Copy_ operation,
@@ -221,6 +230,7 @@ This way the reference source is easy to change.
 @usage Using Reference Copy
 
 Select node(s) and click the shelf button.
+
 
 @relnotes Release Notes
 
@@ -266,7 +276,7 @@ def postproc_refcopy(nodepath, srcpath):
         parms = N.parms()
         for p in parms:
             try:
-                if True:
+                if not p.parmTemplate().isHidden(): # skip hidden parms, e.g. description labels
                     for k in p.keyframes():
                         x = k.expression()
                         x = re.sub('"\.\./[^/]+', 'chsop("ref_source")+"', x)
@@ -337,257 +347,6 @@ for S in sel:
 ]]></script>
   </tool>
 
-  <tool name="qLib::AttribDisplayMarkers" label="attr.vis" icon="BUTTONS_displayoptions">
-    <helpText><![CDATA[#icon: BUTTONS/displayoptions
-#context: obj
-#type: tool
-
-= Attrib Display Markers qL =
-
-*version 1*
-
-"""Creates display markers for all the attributes present on the displayed operator.
-----
-Shift-LMB: Clear previously built
-Ctrl-LMB: Clear ALL markers then rebuild
-Ctrl+Shift-LMB: Clear ALL markers
-"""
-
-This function builds visual display markers for all the attributes
-that exist on the currently displayed operator.
-
-(It can be considered as a shortcut to the similar function of the
-[Attr Visualize qL SOP|node:sop/qLib::attr_visualize_ql::1]'s
-_Marker_ section.)
-
-@usage Usage
-
-((LMB)):
-    Builds attribute markers for the current Display SOP.
-    (Existing markers will also be rebuilt.)
-((Shift + LMB)):
-    Clears previously built attribute markers.
-    (Markers not built with this function will be preserved.)
-((Ctrl + LMB)):
-    Clears _all_ markers (made by this tool or otherwise)
-    and rebuilds the attribute marker list.
-((Ctrl + Shift + LMB)) . :
-    Deletes _all_ display markers. _All of them._
-
-
-@related
-    - [Attr Visualize qL SOP|node:sop/qLib::attr_visualize_ql::1]
-    - ...
-
-@usage Using Add Display Markers
-
-Set the Display flag on a node and click the shelf button. Then press
-the `D` key in a Scene View, go to the Markers tab to see the generated
-attribute markers ("Custom" section.)
-
-
-
-]]></helpText>
-    <script scriptType="python"><![CDATA[import hou
-import toolutils
-
-
-def ynreq(msg):
-    return hou.ui.displayMessage(msg, ["Ok", "Cancel"]) == 0
-
-def dispmsg(msg):
-    hou.ui.setStatusMessage(msg)
-
-
-
-def get_current_viewer_name():
-    v = toolutils.sceneViewer()
-    w = "%s.%s.world" % \
-            (v.pane().desktop().name(), \
-            v.name() )
-    return w
-
-
-
-def get_display_sop():
-    v = None
-    try:
-        v = toolutils.sceneViewer()
-        v = v.pwd() # OBJ object
-        v = v.displayNode()
-    except:
-        v = None
-        dispmsg("couldn't get Display (S)OP")
-    return v
-
-
-
-def clear_built_markers(kwargs=None, clearAll=False):
-    if True: #ynreq("Clear %s display markers?" % "ALL" if clearAll else "generated"):
-        for m in hou.hscript("viewoptls")[0].split():
-            if clearAll or '_vis_' in m:
-                print "viewoptrm %s" % m
-                hou.hscript("viewoptrm %s" % m)
-
-
-
-
-
-def build_markers(kwargs=None): # ( was create_markers() )
-    """."""
-
-    type_names = {
-        hou.attribType.Point: "point",
-        hou.attribType.Prim: "prim",
-        hou.attribType.Vertex: "vertex"
-    }
-
-    type_labels = {
-        hou.attribType.Point: "p:",
-        hou.attribType.Prim: "pr:",
-        hou.attribType.Vertex: "vt:"
-    }
-
-    pwd = get_display_sop()
-    if pwd: dispmsg("display OP: %s" % pwd.path())
-    else: return
-
-    type_name  = lambda t: type_names[t]  if t in type_names  else ""
-    type_label = lambda t: type_labels[t] if t in type_labels else ""
-    p  = lambda n: pwd.parm(n).eval()
-    ps = lambda n: pwd.parm(n).eval().strip()
-
-    views = hou.hscript("viewls -n")[0].split()
-    g = pwd.geometry()
-
-    def to_as(attrs):
-        return " ".join( [ a.name() for a in attrs if a.dataType() is not hou.attribData.String ] )
-
-    #force_tx  = ps('force_text').split()
-    #vel_attrs = ps('vel_attribs').split()
-
-    force_tx = 'P Cd uv'.split()
-    vel_attrs = 'v accel'.split()
-
-    scale_v   = 1.0 # vec scale
-    scale_vel = (1/24.0) # velocity scale
-
-    attrs_pt = to_as(g.pointAttribs())
-    attrs_pr = to_as(g.primAttribs())
-    attrs_vtx = to_as(g.vertexAttribs())
-
-    #attrs_display = ps('markers_display').split()
-    #if p('do_markers_display')==0: attrs_display = []
-
-    CS = [
-            (attrs_pt, g.findPointAttrib),
-            (attrs_pr, g.findPrimAttrib),
-            (attrs_vtx, g.findVertexAttrib)
-        ]
-
-    hue = 120.0
-    color = hou.Color()
-
-    for C in CS:
-
-        attrs = C[0].split()
-        find_attr_func = C[1] #g.findPointAttrib
-
-        # add textual version of vector attrs
-        attrs += [ ("text:%s" % v) for v in attrs if find_attr_func(v).size()==3 ]
-        attrs = sorted(attrs)
-
-        for name in attrs:
-
-            tx = "text:" in name
-            name = name.replace("text:", "")
-
-            a = find_attr_func(name)
-            if a and a.dataType() is not hou.attribData.String:
-                opt_name = "_vis_%s_%d" % (name, tx, )
-                size = a.size()
-                is_xn = a.isTransformedAsNormal()
-                is_xv = a.isTransformedAsVector()
-                is_vect = size==3 and not tx # and name not in force_tx
-                as_vel = name in vel_attrs
-                scale = scale_vel if as_vel else scale_v
-    
-                label = "%s%s" % ( type_label(a.type()), name )
-    
-                if is_vect:
-                    label += " [vec."
-                    if as_vel: label += "/v."
-                    if is_xn: label += "; xformed as normal"
-                    if is_xv: label += "; xformed as vector"
-                    label += "]"
-                else:
-                    pass # label += " (num)"
-    
-                print "--- %s: '%s'" % (name, label)
-    
-                # create/update marker
-    
-                hou.hscript('viewoptrm %s' % opt_name)
-                hou.hscript('viewoptadd %s %s' % ('vector' if is_vect else 'text', opt_name))
-    
-                def vos(parm, val):
-                    print ' --- viewoptset %s %s ( %s )' % (opt_name, parm, val)
-                    hou.hscript('viewoptset %s %s ( %s )' % (opt_name, parm, val))
-
-                if True:    
-                    vos('attrib', a.name())
-                    vos('class', type_name(a.type()))
-                    vos('label', '"%s"' % label)
-                    vos('overridecolor', '1')
-
-                    val = 0.85 if is_vect else 0.15
-
-                    color.setHSV((hue, 0.9, val)); vos('color', '%f %f %f' % color.rgb())
-                    color.setHSV((hue, 0.4, val+0.1)); vos('selcolor', '%f %f %f' % color.rgb())
-                    hue += 137.5 * 0.5
-
-                if is_vect:
-                    vos('scale', scale)
-
-                if False: # name in attrs_display:
-                    for view in views:
-                        hou.hscript('viewoptenable %s all +%s' % (view, opt_name))
-                    hue += 137.5/2.0
-
-            else:
-                print "couldn't find attribute %s" % name
-
-    print "done. ------------"
-
-'''
-viewoptset
-    vector_dunno
-        arrow ( 0 )
-        attrib ( N )
-        class ( point )
-        color ( 0 0 1 )
-        icon ( SI_pointNormal )
-        label ( "pr: primN (vector)" )
-        overridecolor ( 0 )
-        scale ( 1 )
-        selcolor ( 0 0.45 1 )
-        visibility ( 1 )
-'''
-
-
-print kwargs
-
-shift = kwargs['shiftclick']
-ctrl  = kwargs['ctrlclick']
-alt   = kwargs['altclick']
-
-clear_built_markers(kwargs, clearAll=ctrl)
-
-if not shift:
-    build_markers(kwargs)
-]]></script>
-  </tool>
-
   <tool name="qLib::ToggleViewportTemplates" label="/templates/" icon="NODEFLAGS_template">
     <helpText><![CDATA[#icon: NODEFLAGS/template
 #context: obj
@@ -598,19 +357,19 @@ if not shift:
 *version 1*
 
 """Toggles template geometry display in viewports.
-----
-LMB: Toggle template display
-Shift-LMB: Enable template display
-Ctrl-LMB: Clear display template flag on all (S)OPs
+---
+LMB: Toggle template display.
+Shift-LMB: Enable template display.
+Ctrl-LMB: Clear display template flag on all (S)OPs.
 """
 
 @usage Usage
 
-((LMB)):
+- ((LMB)):
     Toggles template display (Display Options -> Guides -> Templated geometry, Selectable templates)
-((Shift + LMB)):
+- ((Shift + LMB)):
     Enable template display
-((Ctrl + LMB)):
+- ((Ctrl + LMB)):
     Clears template flag on all (S)OPs within the currently displayed container
 
 
@@ -625,9 +384,10 @@ ctrl  = kwargs['ctrlclick']
 alt   = kwargs['altclick']
 
 
+v = toolutils.sceneViewer()
+
 if ctrl:
-    n = toolutils.sceneViewer()
-    n = n.pwd() # container node
+    n = v.pwd() # container node
 
     for c in n.children():
         try:
@@ -636,9 +396,12 @@ if ctrl:
         except:
             pass
 
-    hou.ui.setStatusMessage("Cleared all display template flags")
-else:
+    msg = "Cleared all display template flags"
+    hou.ui.setStatusMessage(msg)
+    v.clearPromptMessage()
+    v.setPromptMessage(msg, hou.promptMessageType.Warning)
 
+else:
     if not hasattr(hou.session, "templates"):
         hou.session.templates = True
 
@@ -648,7 +411,10 @@ else:
 
     t = 'on' if hou.session.templates else 'off'
     hou.hscript("viewdisplay -T %s -i %s *" % (t, t, ))
-    hou.ui.setStatusMessage("Templates are now %s" % ("DISPLAYED" if hou.session.templates else "OFF") )
+    msg = "Templates are now %s" % ("DISPLAYED" if hou.session.templates else "OFF")
+    hou.ui.setStatusMessage(msg)
+    v.clearPromptMessage()
+    v.setPromptMessage(msg, hou.promptMessageType.Warning)
 ]]></script>
   </tool>
 
@@ -662,16 +428,16 @@ else:
 *version 1*
 
 """Toggles OP guide display in the viewports.
-----
-LMB: Toggle guide display
-Shift-LMB: Enable guide display
+---
+LMB: Toggle guide display.
+Shift-LMB: Enable guide display.
 """
 
 @usage Usage
 
-((LMB)):
+- ((LMB)):
     Toggles guides display (Display Options -> Guides -> Node guides)
-((Shift + LMB)):
+- ((Shift + LMB)):
     Enable guides display
 
 @bugs Limitations
@@ -695,6 +461,7 @@ _version 1_ ---
 shift = kwargs['shiftclick']
 
 v = toolutils.sceneViewer()
+
 w = "%s.%s.world" % \
         (v.pane().desktop().name(), \
         v.name() )
@@ -709,7 +476,11 @@ if shift:
 hou.session.guides = not hou.session.guides
 #hou.hscript("viewdisplay -g %s %s" % ("on" if hou.session.guides else "off", w, ))
 hou.hscript("viewdisplay -g %s *" % ("on" if hou.session.guides else "off", ))
-hou.ui.setStatusMessage("Geometry guides are now %s" % ("DISPLAYED" if hou.session.guides else "OFF") )]]></script>
+msg = "Geometry guides are now %s" % ("DISPLAYED" if hou.session.guides else "OFF")
+hou.ui.setStatusMessage(msg)
+v.clearPromptMessage()
+v.setPromptMessage(msg, hou.promptMessageType.Warning)
+]]></script>
   </tool>
 
   <tool name="qLib::ToggleTimeDependencyDisplay" label="/time dep/" icon="NETVIEW_time_dependent_badge_large">
@@ -722,19 +493,19 @@ hou.ui.setStatusMessage("Geometry guides are now %s" % ("DISPLAYED" if hou.sessi
 *version 1*
 
 """Toggles time dependency badge display in all network editors.
-----
-LMB: Toggle time dependency display
-Shift-LMB: Turn on
-Ctrl-LMB: Turn off
+---
+LMB: Toggle time dependency display (between normal and large).
+Shift-LMB: Turn on (large).
+Ctrl-LMB: Turn off (hide).
 """
 
 @usage Usage
 
-((LMB)):
+- ((LMB)):
     Toggle time dependency display
-((Shift + LMB)):
+- ((Shift + LMB)):
     Turn on display
-((Ctrl + LMB)):
+- ((Ctrl + LMB)):
     Turn off display
 
 @bugs Limitations
@@ -755,6 +526,8 @@ _version 1_ ---
     <script scriptType="python"><![CDATA[# toggle time-dependency display in network editor(s)
 # in H16.5 the relevant preference is called "badgetimedep", which can be set to "hide", "normal" or "large". "showtimedep" is no longer used
 
+import toolutils
+
 shift = kwargs['shiftclick']
 ctrl  = kwargs['ctrlclick']
 
@@ -762,8 +535,9 @@ D = 'badgetimedep'
 ns = [ t for t in hou.ui.paneTabs() if type(t) is hou.NetworkEditor ]
 
 try:
-    b = ns[0].getPref(D) # hide/large
-    b = 'hide' if b=='large' else 'large'
+    e = toolutils.networkEditor()
+    b = ns[0].getPref(D)
+    b = 'normal' if b=='large' else 'large'
     
     if shift:
         b = 'large'
@@ -773,6 +547,10 @@ try:
     for n in ns:
         n.setPref('showtimedep', '1') # make it compatible w/ 16.0
         n.setPref(D, b) # use the 16.5+ way
+
+    msg = "Time-Dependent Badges: %s" % b.capitalize()
+    hou.ui.setStatusMessage(msg)
+    e.flashMessage("NETVIEW_time_dependent_badge_large", msg, 3.0)
 
 except:
     hou.ui.setStatusMessage("Couldn't toggle time-dependency badge", hou.severityType.Warning)]]></script>
@@ -788,23 +566,25 @@ except:
 
 """Color nodes in a network based on their authors.
 Select node(s) in the network editor to specify network.
-(NOTE: Selection is also needed when restoring original colors!)
-----
-LMB: Apply coloring by author
+---
+LMB: Apply coloring by author.
 Shift-LMB: Restore original colors (requires node selection!)
 """
 
 Select node(s) in a network to specify network.
 All nodes from the authors of selected nodes will he highlighted.
 
-Use Shift-click to restore original color
-(you still have to select a node to specify the network to be restored).
+Use ((Shift + LMB)) to restore original colors.
+
+NOTE:
+    You still have to select a node to specify the network
+    where colors need to be restored.
 
 @usage Usage
 
-((LMB)):
+- ((LMB)):
     Apply color by node author
-((Shift + LMB)):
+- ((Shift + LMB)):
     Restore original node colors
 ]]></helpText>
     <script scriptType="python"><![CDATA[# color-code nodes based on author names
@@ -975,6 +755,46 @@ if r==0:
 
 qlibutils.do_crash_recovery()
 
+]]></script>
+  </tool>
+
+  <tool name="qLib::camera_dolly_zoom_ql" label="dolly/zoom" icon="OBJ_camera">
+    <helpText><![CDATA[#icon: OBJ/camera
+#type: tool
+
+= Camera Dolly/Zoom qL =
+
+*version 1*
+
+"""Switches to the dolly/zoom ('vertigo') camera viewport state (H17.5+).
+---
+LMB: Dolly/Zoom ("Vertigo").
+MMB: Focal Length Zoom.
+RMB: Dolly.
+SPACE: Regular viewport navigation.
+"""
+]]></helpText>
+    <script scriptType="python"><![CDATA[import qlibutils
+
+v = qlibutils.houVersionAsFloat()
+
+if v>=17.5:
+    try:
+        import stateutils
+        viewer = stateutils.findSceneViewer()
+        # this is: obj, sop, dop
+        t = viewer.pwd().childTypeCategory().name().lower()[:3]
+        type = "qLib::camera_zoom_vertigo_ql_%s" % t
+
+        # do some proper checking if the state exists
+        try:
+            viewer.setCurrentState(type)
+        except:
+            pass
+    except:
+        pass
+else:
+    hou.ui.displayMessage("This requires Houdini 17.5 or higher")
 ]]></script>
   </tool>
 </shelfDocument>
